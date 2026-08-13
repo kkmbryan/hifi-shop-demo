@@ -134,7 +134,7 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
         <title>{t('siteTitle')}</title>
         <meta
           name="description"
-          content="Premium Hi-Fi E-Commerce Platform inspired by Aria Audio featuring Cloud Spanner Hybrid Search in HKD currency."
+          content="Premium Hi-Fi E-Commerce Platform inspired by Pro Audio featuring Cloud Spanner Hybrid Search in HKD currency."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />

@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange, onO
                 <h1 className="text-xl font-bold text-white tracking-wide flex items-center gap-2">
                   <span>雅詠音響</span>
                   <span className="text-amber-500 text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
-                    Aria Audio
+                    Pro Audio
                   </span>
                 </h1>
                 <p className="text-xs text-slate-400 hidden sm:block">

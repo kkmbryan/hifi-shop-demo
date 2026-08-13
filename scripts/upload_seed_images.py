@@ -509,6 +509,11 @@ def main():
         help="Google Cloud Storage bucket name (default: hifi-shop-demo-assets)",
     )
     parser.add_argument(
+        "--project",
+        default=os.getenv("GCP_PROJECT", None),
+        help="Google Cloud Platform project ID",
+    )
+    parser.add_argument(
         "--output-dir",
         default="scripts/generated_images",
         help="Local directory to store generated images (default: scripts/generated_images)",
@@ -561,7 +566,7 @@ def main():
     gcs_bucket = None
     if not args.dry_run and not args.skip_upload:
         try:
-            gcs_uploader = GCSImageUploader(args.bucket)
+            gcs_uploader = GCSImageUploader(args.bucket, project_id=args.project)
             gcs_bucket = gcs_uploader.get_or_create_bucket(create_if_missing=True)
         except Exception as gcs_init_err:
             logger.error(

@@ -48,8 +48,8 @@ interface Translations {
 
 export const TRANSLATIONS: Translations = {
   siteTitle: {
-    'zh-HK': '雅詠音響 Aria Audio | 頂級發燒音響專門店',
-    'en-US': 'Aria Audio | Flagship Audiophile Store'
+    'zh-HK': '雅詠音響 Pro Audio | 頂級發燒音響專門店',
+    'en-US': 'Pro Audio | Flagship Audiophile Store'
   },
   tagline: {
     'zh-HK': ' Cloud Spanner 混合搜尋與發燒器材智能搭配示範平台',

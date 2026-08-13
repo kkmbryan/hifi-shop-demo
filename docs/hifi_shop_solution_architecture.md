@@ -1,5 +1,5 @@
 # Solution Architecture Overview
-## Hi-Fi Shop Demo Platform (Inspired by Aria Audio 雅詠音響)
+## Hi-Fi Shop Demo Platform (Inspired by Pro Audio 雅詠音響)
 
 | Attribute | Specification |
 | :--- | :--- |
@@ -14,7 +14,7 @@
 
 ## Executive Summary & System Overview
 
-The **Hi-Fi Shop Demo Platform** is an enterprise-grade digital demonstration e-commerce application engineered specifically for high-end luxury audiophile equipment (inspired by **Aria Audio 雅詠音響**). Audiophile purchasing decisions diverge significantly from conventional retail; customers evaluate products based on complex physical interface compatibility (e.g., *Balanced XLR, I2S HDMI/RJ45, AES/EBU, RCA, Impedance matching*) and subjective acoustic sound signatures (e.g., *"warm tube soundstage"*, *"analytical sound with tight bass response"*, *"smooth vocals"*).
+The **Hi-Fi Shop Demo Platform** is an enterprise-grade digital demonstration e-commerce application engineered specifically for high-end luxury audiophile equipment (inspired by **Pro Audio 雅詠音響**). Audiophile purchasing decisions diverge significantly from conventional retail; customers evaluate products based on complex physical interface compatibility (e.g., *Balanced XLR, I2S HDMI/RJ45, AES/EBU, RCA, Impedance matching*) and subjective acoustic sound signatures (e.g., *"warm tube soundstage"*, *"analytical sound with tight bass response"*, *"smooth vocals"*).
 
 To address these domain-specific challenges, the platform implements a **Hybrid Search Engine Architecture** powered by **Google Cloud Spanner**, seamlessly fusing traditional **BM25 N-gram Full-Text Keyword Search** with **768-dimensional Vector Cosine Similarity Search** (via Vertex AI Text Embeddings).
 

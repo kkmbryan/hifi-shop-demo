@@ -1,5 +1,5 @@
 # Database Schema Design Document
-## Hi-Fi Shop Demo Platform (Inspired by Aria Audio 雅詠音響)
+## Hi-Fi Shop Demo Platform (Inspired by Pro Audio 雅詠音響)
 
 | Document Attribute | Specification Details |
 | :--- | :--- |

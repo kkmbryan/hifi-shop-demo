@@ -1,5 +1,5 @@
 # Business Requirements Document (BRD)
-## Hi-Fi Shop Demo Platform (Inspired by Aria Audio 雅詠音響)
+## Hi-Fi Shop Demo Platform (Inspired by Pro Audio 雅詠音響)
 
 | Document Attribute | Details |
 | :--- | :--- |
@@ -15,7 +15,7 @@
 
 ## Executive Summary
 
-The **Hi-Fi Shop Demo Platform** is a flagship digital demonstration platform designed to showcase modern, high-performance e-commerce capabilities tailored specifically for the luxury audiophile and high-end audio market. Inspired by **Aria Audio (雅詠音響)**, a premier Hong Kong audio equipment dealer, this project aims to address the unique challenges of marketing and searching complex audiophile hardware—such as Digital-to-Analog Converters (DACs), Tube Amplifiers, High-End Streamers, Turntables, and Power Conditioners.
+The **Hi-Fi Shop Demo Platform** is a flagship digital demonstration platform designed to showcase modern, high-performance e-commerce capabilities tailored specifically for the luxury audiophile and high-end audio market. Inspired by **Pro Audio (雅詠音響)**, a premier Hong Kong audio equipment dealer, this project aims to address the unique challenges of marketing and searching complex audiophile hardware—such as Digital-to-Analog Converters (DACs), Tube Amplifiers, High-End Streamers, Turntables, and Power Conditioners.
 
 Standard e-commerce search engines rely exclusively on keyword matches (e.g., exact part numbers or brand names). However, audiophile purchasing behavior is driven heavily by **acoustic characteristics** (e.g., *"warm tube-like sound stage"*, *"analytical sound with tight bass response"*), **budget parameters** strictly in local currency (Hong Kong Dollars - HKD), and **interface compatibility** (e.g., *Balanced XLR, I2S, Optical, AES/EBU*). 
 

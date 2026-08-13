@@ -105,6 +105,12 @@ const DEFAULT_CATEGORY_ICONS: Record<string, string> = {
  */
 export function adaptCategory(raw: any): Category {
   const id = raw.id || raw.category_id || '';
+  const price =
+    parseSpannerNumeric(raw.priceHkd) ||
+    parseSpannerNumeric(raw.price_hkd) ||
+    parseSpannerNumeric(raw.price) ||
+    0;
+
   return {
     id,
     nameEn: raw.nameEn || raw.name_en || raw.name || '',
@@ -120,6 +126,42 @@ export function adaptCategory(raw: any): Category {
     description_zh: raw.descriptionZh || raw.description_zh || raw.description || '',
     display_order: raw.display_order,
   };
+}
+
+/**
+ * Safely parse Spanner NUMERIC values, numeric strings, or numeric objects into a positive number.
+ * Returns 0 if value is invalid, NaN, or non-positive.
+ */
+export function parseSpannerNumeric(val: any): number {
+  if (val === null || val === undefined) {
+    return 0;
+  }
+  if (typeof val === 'number') {
+    return isNaN(val) || val <= 0 ? 0 : val;
+  }
+  if (typeof val === 'string') {
+    const cleaned = val.replace(/[^0-9.-]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) || num <= 0 ? 0 : num;
+  }
+  if (typeof val === 'object') {
+    if (val.value !== undefined) {
+      return parseSpannerNumeric(val.value);
+    }
+    if (val.val !== undefined) {
+      return parseSpannerNumeric(val.val);
+    }
+    if (val.amount !== undefined) {
+      return parseSpannerNumeric(val.amount);
+    }
+    if (typeof val.toString === 'function') {
+      const str = val.toString();
+      if (str && str !== '[object Object]') {
+        return parseSpannerNumeric(str);
+      }
+    }
+  }
+  return 0;
 }
 
 /**
@@ -198,6 +240,12 @@ export function adaptProduct(raw: any): Product {
     }
   }
 
+  const price =
+    parseSpannerNumeric(raw.priceHkd) ||
+    parseSpannerNumeric(raw.price_hkd) ||
+    parseSpannerNumeric(raw.price) ||
+    0;
+
   return {
     id,
     product_id: id,
@@ -209,8 +257,8 @@ export function adaptProduct(raw: any): Product {
     nameZh: raw.nameZh || raw.name_zh || raw.name || '',
     name_en: raw.nameEn || raw.name_en || raw.name || '',
     name_zh: raw.nameZh || raw.name_zh || raw.name || '',
-    priceHkd: typeof raw.priceHkd === 'number' ? raw.priceHkd : Number(raw.price_hkd || 0),
-    price_hkd: typeof raw.priceHkd === 'number' ? raw.priceHkd : Number(raw.price_hkd || 0),
+    priceHkd: price,
+    price_hkd: price,
     descriptionEn: raw.descriptionEn || raw.description_en || raw.description || '',
     descriptionZh: raw.descriptionZh || raw.description_zh || raw.description || '',
     description_en: raw.descriptionEn || raw.description_en || raw.description || '',

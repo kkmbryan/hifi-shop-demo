@@ -1,5 +1,5 @@
 # Comprehensive Code Review & Architecture Audit Report (Round 2)
-## Hi-Fi Shop Demo Platform (Inspired by Aria Audio 雅詠音響)
+## Hi-Fi Shop Demo Platform (Inspired by Pro Audio 雅詠音響)
 
 | Review Attribute | Details |
 | :--- | :--- |

@@ -38,7 +38,7 @@ describe('LocaleContext Unit & Component Tests', () => {
     expect(screen.getByTestId('term-amplifiers')).toHaveTextContent('擴音機');
     expect(screen.getByTestId('term-tubeAmps')).toHaveTextContent('膽機');
     expect(screen.getByTestId('term-streamers')).toHaveTextContent('網絡播放器');
-    expect(screen.getByTestId('translated-title')).toHaveTextContent('雅詠音響 Aria Audio | 頂級發燒音響專門店');
+    expect(screen.getByTestId('translated-title')).toHaveTextContent('雅詠音響 Pro Audio | 頂級發燒音響專門店');
     expect(screen.getByTestId('translated-param')).toHaveTextContent('共找到 12 款極品音響器材');
   });
 
@@ -57,7 +57,7 @@ describe('LocaleContext Unit & Component Tests', () => {
     expect(screen.getByTestId('term-amplifiers')).toHaveTextContent('Amplifiers');
     expect(screen.getByTestId('term-tubeAmps')).toHaveTextContent('Vacuum Tube Amps');
     expect(screen.getByTestId('term-streamers')).toHaveTextContent('Network Streamers');
-    expect(screen.getByTestId('translated-title')).toHaveTextContent('Aria Audio | Flagship Audiophile Store');
+    expect(screen.getByTestId('translated-title')).toHaveTextContent('Pro Audio | Flagship Audiophile Store');
     expect(screen.getByTestId('translated-param')).toHaveTextContent('Found 12 flagship audio components');
 
     // Verify localStorage update

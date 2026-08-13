@@ -1,5 +1,5 @@
 # Google Cloud Monthly Cost Estimation & Deployment Guide
-## Hi-Fi Shop Demo Platform (Inspired by Aria Audio 雅詠音響)
+## Hi-Fi Shop Demo Platform (Inspired by Pro Audio 雅詠音響)
 
 | Attribute | Specification |
 | :--- | :--- |
@@ -16,7 +16,7 @@
 
 ## Executive Summary & Financial Overview
 
-This document provides a comprehensive monthly cost estimation, infrastructure sizing model, and step-by-step production deployment guide for the **Hi-Fi Shop Demo Platform** on **Google Cloud Platform (GCP)**. The target architecture hosts an enterprise-grade luxury audiophile e-commerce demo application inspired by **Aria Audio 雅詠音響**, featuring unified relational catalog data, exact BM25 full-text search, and 768-dimensional vector cosine similarity search powered by **Google Cloud Spanner** and **Vertex AI (`text-embedding-004`)**.
+This document provides a comprehensive monthly cost estimation, infrastructure sizing model, and step-by-step production deployment guide for the **Hi-Fi Shop Demo Platform** on **Google Cloud Platform (GCP)**. The target architecture hosts an enterprise-grade luxury audiophile e-commerce demo application inspired by **Pro Audio 雅詠音響**, featuring unified relational catalog data, exact BM25 full-text search, and 768-dimensional vector cosine similarity search powered by **Google Cloud Spanner** and **Vertex AI (`text-embedding-004`)**.
 
 All workload components are deployed into project `bryanko-hifi-shop-demo` within GCP region `asia-east2` (Hong Kong). By adopting a serverless-first compute architecture (Cloud Run with scale-to-zero execution) paired with granular Cloud Spanner instance sizing (100 Processing Units), the total estimated operational cost for running the platform is **~$78.00 – $85.00 USD / month**.
 

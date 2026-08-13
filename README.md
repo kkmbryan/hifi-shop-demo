@@ -1,5 +1,5 @@
 # Hi-Fi Equipment E-Commerce Demo Platform
-> **Inspired by Aria Audio (雅詠音響)** | High-Performance Audiophile Retail & Acoustic Hybrid Search
+> **Inspired by Pro Audio (雅詠音響)** | High-Performance Audiophile Retail & Acoustic Hybrid Search
 
 [![Google Cloud Platform](https://img.shields.io/badge/Google_Cloud-Cloud_Run_%7C_Cloud_Spanner_%7C_Vertex_AI-4285F4?logo=google-cloud)](https://cloud.google.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -98,4 +98,4 @@ To deploy the entire infrastructure, database, and microservices into your GCP p
 
 ## 📜 License
 
-This demo project is released under the [MIT License](LICENSE). Inspired by [Aria Audio (雅詠音響)](https://aria-audio.com).
+This demo project is released under the [MIT License](LICENSE). Inspired by [Pro Audio (雅詠音響)](https://aria-audio.com).

@@ -1,6 +1,6 @@
-import { v1 as aiplatform } from '@google-cloud/aiplatform';
-import { executeSpannerSql, projectId } from '../config/spanner';
-import { localizeProduct, Product, ProductSpecification } from './catalogService';
+import { v1 as aiplatform } from "@google-cloud/aiplatform";
+import { executeSpannerSql, projectId } from "../config/spanner";
+import { localizeProduct, Product, ProductSpecification } from "./catalogService";
 
 export interface HybridSearchOptions {
   q: string;
@@ -27,6 +27,51 @@ const WEIGHT_BM25 = 0.4;
 const WEIGHT_VECTOR = 0.6;
 const EMBEDDING_DIM = 768;
 
+const ACTIVE_BUCKET_NAME = process.env.GCS_BUCKET_NAME || "bryanko-hifi-shop-demo-assets";
+
+/**
+ * Helper function that extracts numbers from Spanner NUMERIC objects ({ value: "39800.00" }),
+ * numeric strings, or raw numbers.
+ */
+export function parseSpannerNumeric(val: any): number {
+  if (val === null || val === undefined) {
+    return 0;
+  }
+  if (typeof val === "number") {
+    return Number.isNaN(val) ? 0 : val;
+  }
+  if (typeof val === "string") {
+    const parsed = parseFloat(val);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  if (typeof val === "object" && val !== null) {
+    if ("value" in val && val.value !== undefined && val.value !== null) {
+      return parseSpannerNumeric(val.value);
+    }
+  }
+  const num = Number(val);
+  return Number.isNaN(num) ? 0 : num;
+}
+
+/**
+ * Sanitizes image URLs by dynamically replacing legacy bucket names with the active bucket name (bryanko-hifi-shop-demo-assets).
+ */
+export function sanitizeImageUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  const sanitized = String(url).trim();
+  if (/^https?:\/\/storage\.googleapis\.com\/[^\/]+(\/.*)?$/i.test(sanitized)) {
+    return sanitized.replace(/^(https?:\/\/storage\.googleapis\.com\/)[^\/]+(\/.*)?$/i, `$1${ACTIVE_BUCKET_NAME}$2`);
+  }
+  if (/^gs:\/\/[^\/]+(\/.*)?$/i.test(sanitized)) {
+    return sanitized.replace(/^(gs:\/\/)[^\/]+(\/.*)?$/i, `$1${ACTIVE_BUCKET_NAME}$2`);
+  }
+  if (!/^https?:\/\//i.test(sanitized) && !/^gs:\/\//i.test(sanitized)) {
+    const cleanPath = sanitized.startsWith("/") ? sanitized.slice(1) : sanitized;
+    return `https://storage.googleapis.com/${ACTIVE_BUCKET_NAME}/${cleanPath}`;
+  }
+  return sanitized;
+}
+
 /**
  * Singleton instance of Vertex AI PredictionServiceClient for embedding generation.
  */
@@ -34,7 +79,7 @@ let predictionServiceClientInstance: aiplatform.PredictionServiceClient | null =
 
 function getPredictionServiceClient(): aiplatform.PredictionServiceClient {
   if (!predictionServiceClientInstance) {
-    const location = process.env.GCP_LOCATION || 'us-central1';
+    const location = process.env.GCP_LOCATION || "us-central1";
     const clientOptions = {
       apiEndpoint: `${location}-aiplatform.googleapis.com`,
     };
@@ -48,7 +93,7 @@ function getPredictionServiceClient(): aiplatform.PredictionServiceClient {
  */
 export async function generateTextEmbedding(text: string): Promise<number[]> {
   try {
-    const location = process.env.GCP_LOCATION || 'us-central1';
+    const location = process.env.GCP_LOCATION || "us-central1";
     const predictionServiceClient = getPredictionServiceClient();
 
     const endpoint = `projects/${projectId}/locations/${location}/publishers/google/models/text-embedding-004`;
@@ -76,7 +121,7 @@ export async function generateTextEmbedding(text: string): Promise<number[]> {
       }
     }
   } catch (err) {
-    console.warn('[Vertex AI Warning] Could not generate embedding via Vertex AI API:', (err as Error).message);
+    console.warn("[Vertex AI Warning] Could not generate embedding via Vertex AI API:", (err as Error).message);
   }
 
   return new Array(EMBEDDING_DIM).fill(0);
@@ -85,17 +130,17 @@ export async function generateTextEmbedding(text: string): Promise<number[]> {
 /**
  * Execute Cloud Spanner Hybrid Search (BM25 Keyword Search + 768-dim Vector COSINE Distance merged via RRF).
  * RRF Score = (0.4 / (60 + Rank_BM25)) + (0.6 / (60 + Rank_Vector))
- * Throws explicit Error('Cloud Spanner hybrid search query failed') if database query fails or returns null.
+ * Throws explicit Error("Cloud Spanner hybrid search query failed") if database query fails or returns null.
  */
 export async function searchProducts(options: HybridSearchOptions): Promise<HybridSearchResult> {
   const startTime = Date.now();
-  const queryText = (options.q || '').trim();
+  const queryText = (options.q || "").trim();
   const limit = options.limit || 20;
   const offset = options.offset || 0;
 
   if (!queryText) {
     return {
-      query: '',
+      query: "",
       total_matches: 0,
       execution_time_ms: Date.now() - startTime,
       limit,
@@ -121,7 +166,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
     });
 
     if (bm25Rows === null) {
-      throw new Error('Cloud Spanner hybrid search query failed');
+      throw new Error("Cloud Spanner hybrid search query failed");
     }
 
     // 2. Vector Cosine Distance KNN Query against Cloud Spanner
@@ -139,7 +184,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
     });
 
     if (vectorRows === null) {
-      throw new Error('Cloud Spanner hybrid search query failed');
+      throw new Error("Cloud Spanner hybrid search query failed");
     }
 
     // Build Rank maps
@@ -172,7 +217,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
     const pRows = await executeSpannerSql<Product>({ sql: pSql, params: { product_ids: candidateIds } });
 
     if (pRows === null) {
-      throw new Error('Cloud Spanner hybrid search query failed');
+      throw new Error("Cloud Spanner hybrid search query failed");
     }
 
     // Batch query specifications for candidate products with IN UNNEST(@product_ids)
@@ -180,7 +225,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
     const specRows = await executeSpannerSql<ProductSpecification>({ sql: specsSql, params: { product_ids: candidateIds } });
 
     if (specRows === null) {
-      throw new Error('Cloud Spanner hybrid search query failed');
+      throw new Error("Cloud Spanner hybrid search query failed");
     }
 
     const specsMap = new Map<string, ProductSpecification[]>();
@@ -194,7 +239,8 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
     for (const p of pRows) {
       productMap.set(p.product_id, {
         ...p,
-        price_hkd: Number(p.price_hkd),
+        price_hkd: parseSpannerNumeric(p.price_hkd),
+        image_url: sanitizeImageUrl(p.image_url),
         specifications: specsMap.get(p.product_id) || []
       });
     }
@@ -246,9 +292,9 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
       products: paginated,
     };
   } catch (err) {
-    if (err instanceof Error && err.message === 'Cloud Spanner hybrid search query failed') {
+    if (err instanceof Error && err.message === "Cloud Spanner hybrid search query failed") {
       throw err;
     }
-    throw new Error('Cloud Spanner hybrid search query failed');
+    throw new Error("Cloud Spanner hybrid search query failed");
   }
 }
