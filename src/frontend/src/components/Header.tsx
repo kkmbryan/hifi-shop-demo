@@ -154,6 +154,8 @@ export const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange, onO
                       <div className="w-16 h-16 rounded bg-slate-950 flex-shrink-0 overflow-hidden relative border border-slate-700 flex items-center justify-center">
                         <img
                           src={product.imageUrl}
+                          loading="eager"
+                          decoding="async"
                           alt={locale === 'zh-HK' ? product.nameZh : product.nameEn}
                           className="w-full h-full object-cover"
                           onError={(e) => {

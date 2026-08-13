@@ -59,7 +59,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
             <img
               src={product.imageUrl}
               alt={title}
-              loading="lazy"
+              loading="eager"
+              decoding="async"
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
               className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${

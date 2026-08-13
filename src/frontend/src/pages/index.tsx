@@ -334,6 +334,8 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
                 <div className="w-full sm:w-48 h-48 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex-shrink-0 relative">
                   <img
                     src={selectedProductModal.imageUrl}
+                    loading="eager"
+                    decoding="async"
                     alt={selectedProductModal.nameEn}
                     className="w-full h-full object-cover"
                     onError={(e) => {
