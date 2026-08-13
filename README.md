@@ -83,3 +83,24 @@ hifi-shop-demo/
 ## 📜 License
 
 This demo project is released under the [MIT License](LICENSE). Inspired by [Aria Audio (雅詠音響)](https://aria-audio.com).
+
+---
+
+## 🚀 Docker & Cloud Run CI/CD Deployment
+
+### 🐳 Local Container Builds
+Build and test the backend and frontend multi-stage Docker containers locally:
+
+```bash
+# Build & run Backend API microservice container (Port 8080)
+docker build -t hifi-shop-backend:latest ./src/backend
+docker run -p 8080:8080 hifi-shop-backend:latest
+
+# Build & run Frontend Next.js SSR container (Port 3000)
+docker build -t hifi-shop-frontend:latest ./src/frontend
+docker run -p 3000:3000 hifi-shop-frontend:latest
+```
+
+### ⚙️ GitHub Actions Automation
+- 🧪 **CI Workflow** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)): Automatically runs TypeScript type checks, unit/integration test suites (49 passing tests), and Docker build verification on every push.
+- ☁️ **CD Workflow** ([`.github/workflows/cd-cloudrun.yml`](.github/workflows/cd-cloudrun.yml)): Deploys backend and frontend services to **Google Cloud Run** using Workload Identity Federation and GCP Artifact Registry.
