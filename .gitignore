@@ -28,3 +28,7 @@ build/
 .next/
 out/
 skills-lock.json
+
+# Generated Images
+scripts/generated_images/
+scripts/generated_images/
