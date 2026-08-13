@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Environment & Credentials
+.env
+.env.local
+*.pem
+*.key
+gcp_config.txt
+
+# Internal Agent Framework & Logs
+.agents/
+.gemini/
+.idea/
+.vscode/
+scratch/
+*.log
+
+# OS & Build Artifacts
+.DS_Store
+Thumbs.db
+dist/
+build/
+.next/
+out/
