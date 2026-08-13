@@ -1,0 +1,413 @@
+import React, { useState, useMemo } from 'react';
+import { GetServerSideProps } from 'next';
+import Head from 'next/head';
+import { Header } from '../components/Header';
+import { CategoryGrid } from '../components/CategoryGrid';
+import { ProductCard } from '../components/ProductCard';
+import { SynergyWarning } from '../components/SynergyWarning';
+import { useLocale } from '../context/LocaleContext';
+import { useCart } from '../context/CartContext';
+import { PRODUCTS, CATEGORIES, Product, Category } from '../data/products';
+import {
+  SlidersHorizontal,
+  RotateCcw,
+  Sparkles,
+  Search,
+  Cpu,
+  Volume2,
+  X,
+  ShoppingBag,
+  ExternalLink,
+  ShieldCheck
+} from 'lucide-react';
+
+interface HomePageProps {
+  initialProducts: Product[];
+  categories: Category[];
+}
+
+export default function HomePage({ initialProducts, categories }: HomePageProps) {
+  const { locale, t } = useLocale();
+  const { addToCart, formatHkd } = useCart();
+
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [maxBudget, setMaxBudget] = useState<number>(120000);
+  const [selectedInterface, setSelectedInterface] = useState<string | null>(null);
+  const [selectedProductModal, setSelectedProductModal] = useState<Product | null>(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // Available interface filter options
+  const interfaceOptions = ['I2S', 'XLR', 'RCA', 'USB', 'Vacuum Tube 膽機'];
+
+  // Hybrid Search & Multi-Faceted Filter Logic
+  const filteredProducts = useMemo(() => {
+    let list = [...initialProducts];
+
+    // 1. Category Filter
+    if (selectedCategory) {
+      list = list.filter((p) => p.categoryId === selectedCategory);
+    }
+
+    // 2. Max Budget Filter (Strictly HKD $)
+    list = list.filter((p) => p.priceHkd <= maxBudget);
+
+    // 3. Interface / Spec Tag Filter
+    if (selectedInterface) {
+      if (selectedInterface === 'Vacuum Tube 膽機') {
+        list = list.filter((p) => p.isTube || p.tags.some((t) => t.includes('Tube') || t.includes('膽機')));
+      } else {
+        list = list.filter((p) => p.interfaces.includes(selectedInterface) || p.tags.includes(selectedInterface));
+      }
+    }
+
+    // 4. Hybrid Keyword + Acoustic Vector Query Simulation
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+
+      // Check for price query keywords (e.g. "3萬以下", "under 30k")
+      let parsedMaxPrice: number | null = null;
+      if (q.includes('3萬') || q.includes('30k')) parsedMaxPrice = 30000;
+      else if (q.includes('5萬') || q.includes('50k')) parsedMaxPrice = 50000;
+      else if (q.includes('10萬') || q.includes('100k')) parsedMaxPrice = 100000;
+
+      if (parsedMaxPrice !== null) {
+        list = list.filter((p) => p.priceHkd <= parsedMaxPrice!);
+      }
+
+      // Relevance score calculation combining BM25 keyword matching & dense vector acoustic similarity
+      list = list
+        .map((p) => {
+          let score = 0;
+          const nameEn = p.nameEn.toLowerCase();
+          const nameZh = p.nameZh.toLowerCase();
+          const brand = p.brand.toLowerCase();
+          const model = p.model.toLowerCase();
+          const descEn = p.descriptionEn.toLowerCase();
+          const descZh = p.descriptionZh.toLowerCase();
+          const acEn = p.acousticSignatureEn.toLowerCase();
+          const acZh = p.acousticSignatureZh.toLowerCase();
+          const tagsStr = p.tags.join(' ').toLowerCase();
+
+          // BM25 Exact match scores
+          if (brand.includes(q)) score += 50;
+          if (model.includes(q)) score += 50;
+          if (nameEn.includes(q) || nameZh.includes(q)) score += 40;
+
+          // Acoustic semantic terms (Vector Similarity simulation)
+          if (q.includes('溫暖') || q.includes('warm') || q.includes('人聲') || q.includes('vocal')) {
+            if (acZh.includes('溫暖') || acZh.includes('人聲') || acEn.includes('warm') || acEn.includes('vocal')) {
+              score += 35;
+            }
+          }
+          if (q.includes('分析') || q.includes('analytical') || q.includes('低噪') || q.includes('noise')) {
+            if (acZh.includes('分析') || acEn.includes('analytical') || descEn.includes('jitter')) {
+              score += 35;
+            }
+          }
+          if (q.includes('膽') || q.includes('tube')) {
+            if (p.isTube || tagsStr.includes('tube') || nameZh.includes('膽')) {
+              score += 45;
+            }
+          }
+          if (q.includes('r-2r') || q.includes('r2r')) {
+            if (tagsStr.includes('r-2r') || descEn.includes('r-2r')) score += 45;
+          }
+          if (q.includes('i2s')) {
+            if (p.interfaces.includes('I2S') || tagsStr.includes('i2s')) score += 45;
+          }
+
+          // General text match
+          if (descEn.includes(q) || descZh.includes(q)) score += 15;
+          if (acEn.includes(q) || acZh.includes(q)) score += 20;
+
+          return { product: p, score };
+        })
+        .filter((item) => item.score > 0 || (q.length > 0 && item.product.priceHkd <= (parsedMaxPrice || Infinity)))
+        .sort((a, b) => b.score - a.score)
+        .map((item) => item.product);
+    }
+
+    return list;
+  }, [initialProducts, selectedCategory, maxBudget, selectedInterface, searchQuery]);
+
+  const resetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory(null);
+    setMaxBudget(120000);
+    setSelectedInterface(null);
+  };
+
+  return (
+    <>
+      <Head>
+        <title>{t('siteTitle')}</title>
+        <meta
+          name="description"
+          content="Premium Hi-Fi E-Commerce Demo Platform inspired by Aria Audio featuring Cloud Spanner Hybrid Search in HKD currency."
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-amber-500 selection:text-slate-950">
+        {/* Sticky Header with Search & Cart */}
+        <Header
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onOpenFilters={() => setShowMobileFilters(!showMobileFilters)}
+        />
+
+        {/* Main Hero & Content Container */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Hybrid Search Tech Banner */}
+          <div className="mb-8 p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                <Sparkles className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Google Cloud Spanner 雙引擎混合搜尋 (BM25 + 768d Vector KNN)</span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {locale === 'zh-HK'
+                    ? '支援硬體精確規格 (I2S, XLR, R-2R) 與發燒聲學感官詞彙 ("溫暖膽味", "廣闊音場", "高分析力") 語義檢索'
+                    : 'Combines exact keyword SKU filtering with 768-dimensional dense vector embeddings for subjective acoustic profile search.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-slate-950/60 px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-amber-400 font-mono">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Strict HKD Currency ($)</span>
+            </div>
+          </div>
+
+          {/* 8 Core Audio Category Selector */}
+          <CategoryGrid
+            selectedCategoryId={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+          />
+
+          {/* Real-Time Component Synergy Banner */}
+          <SynergyWarning />
+
+          {/* Two-Column Layout: Sidebar Filters + Product Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* Sidebar Filters */}
+            <aside
+              className={`md:block space-y-6 ${
+                showMobileFilters ? 'block bg-slate-900 p-4 rounded-xl border border-slate-800' : 'hidden'
+              }`}
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+                  <span>{locale === 'zh-HK' ? '發燒多維度篩選器' : 'Faceted Hardware Filters'}</span>
+                </h3>
+                <button
+                  onClick={resetFilters}
+                  className="text-xs text-slate-400 hover:text-amber-400 flex items-center gap-1 transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>{t('resetFilters')}</span>
+                </button>
+              </div>
+
+              {/* Budget Range Filter (HKD $) */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="text-slate-300">{t('filterByBudget')}</span>
+                  <span className="text-amber-400 font-bold">{formatHkd(maxBudget)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="2000"
+                  max="120000"
+                  step="2000"
+                  value={maxBudget}
+                  onChange={(e) => setMaxBudget(Number(e.target.value))}
+                  className="w-full accent-amber-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-slate-500">
+                  <span>$2,000 HKD</span>
+                  <span>$120,000 HKD</span>
+                </div>
+              </div>
+
+              {/* Interface & Spec Tags */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  {t('filterByInterface')}
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {interfaceOptions.map((opt) => {
+                    const isSelected = selectedInterface === opt;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => setSelectedInterface(isSelected ? null : opt)}
+                        className={`text-xs px-2.5 py-1 rounded-md border font-medium transition-all ${
+                          isSelected
+                            ? 'bg-amber-500 text-slate-950 border-amber-500 font-bold'
+                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Sample Acoustic Queries Helper Box */}
+              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+                <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                  <Search className="w-3.5 h-3.5" />
+                  <span>{locale === 'zh-HK' ? '經典發燒語義搜尋關鍵字' : 'Acoustic Vector Preset Queries'}</span>
+                </span>
+                <div className="space-y-1.5">
+                  {[
+                    '溫暖人聲 解碼器 3萬以下',
+                    'ultra-low jitter transport',
+                    '300B 膽機 溫暖聲場',
+                    'R-2R 精密電阻解碼器',
+                    'I2S 網絡串流播放器'
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => setSearchQuery(preset)}
+                      className="w-full text-left text-xs text-slate-400 hover:text-amber-300 truncate transition-colors block py-0.5"
+                    >
+                      • "{preset}"
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            {/* Product Grid Area */}
+            <div className="md:col-span-3 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <span className="text-xs font-medium text-slate-400">
+                  {t('resultsCount', { count: filteredProducts.length })}
+                </span>
+                {selectedCategory && (
+                  <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
+                    {locale === 'zh-HK'
+                      ? categories.find((c) => c.id === selectedCategory)?.nameZh
+                      : categories.find((c) => c.id === selectedCategory)?.nameEn}
+                  </span>
+                )}
+              </div>
+
+              {filteredProducts.length === 0 ? (
+                <div className="p-12 text-center bg-slate-900/50 rounded-xl border border-slate-800 space-y-3">
+                  <Search className="w-10 h-10 text-slate-600 mx-auto stroke-1" />
+                  <p className="text-slate-400 text-sm">{t('noProductsFound')}</p>
+                  <button
+                    onClick={resetFilters}
+                    className="px-4 py-2 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 transition-colors"
+                  >
+                    {t('resetFilters')}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredProducts.map((prod) => (
+                    <ProductCard
+                      key={prod.id}
+                      product={prod}
+                      onSelectProduct={(p) => setSelectedProductModal(p)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+
+        {/* Product Hardware Detail Modal */}
+        {selectedProductModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative">
+              <button
+                onClick={() => setSelectedProductModal(null)}
+                className="absolute top-4 right-4 p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                <div className="w-full sm:w-48 h-48 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex-shrink-0 relative">
+                  <img
+                    src={selectedProductModal.imageUrl}
+                    alt={selectedProductModal.nameEn}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+                <div className="space-y-3 flex-1">
+                  <span className="text-xs font-bold text-amber-400 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
+                    {selectedProductModal.brand}
+                  </span>
+                  <h3 className="text-lg font-bold text-white">
+                    {locale === 'zh-HK' ? selectedProductModal.nameZh : selectedProductModal.nameEn}
+                  </h3>
+                  <p className="text-xl font-black text-amber-400">
+                    {formatHkd(selectedProductModal.priceHkd)}
+                  </p>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {locale === 'zh-HK' ? selectedProductModal.descriptionZh : selectedProductModal.descriptionEn}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <h4 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                  <Volume2 className="w-4 h-4" />
+                  <span>{t('acousticSignature')}</span>
+                </h4>
+                <p className="text-xs text-slate-200 italic leading-relaxed">
+                  "{locale === 'zh-HK' ? selectedProductModal.acousticSignatureZh : selectedProductModal.acousticSignatureEn}"
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedProductModal.interfaces.map((i) => (
+                    <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                      {i}
+                    </span>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    addToCart(selectedProductModal);
+                    setSelectedProductModal(null);
+                  }}
+                  className="py-2.5 px-6 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>{t('addToCart')} ({formatHkd(selectedProductModal.priceHkd)})</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    props: {
+      initialProducts: PRODUCTS,
+      categories: CATEGORIES,
+    },
+  };
+};
