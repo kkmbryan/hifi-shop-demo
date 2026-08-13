@@ -16,7 +16,7 @@ try {
   const instance: Instance = spannerClient.instance(instanceId);
   databaseClient = instance.database(databaseId);
 } catch (error) {
-  console.warn('[Spanner Config] Failed to initialize Spanner client instance. Backend will use fallback dataset if DB is unreachable.', error);
+  console.warn('[Spanner Config] Failed to initialize Spanner client instance:', error);
 }
 
 export const getSpannerClient = (): Spanner | null => spannerClient;

@@ -1,7 +1,8 @@
 import { evaluateSynergy } from '../../src/backend/src/services/synergyService';
+import { mockExecuteSpannerSql } from './mockSpanner';
 
 jest.mock('../../src/backend/src/config/spanner', () => ({
-  executeSpannerSql: jest.fn().mockResolvedValue(null),
+  executeSpannerSql: jest.fn().mockImplementation((query) => mockExecuteSpannerSql(query)),
   projectId: 'hifi-shop-demo'
 }));
 

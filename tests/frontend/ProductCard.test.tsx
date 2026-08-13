@@ -3,9 +3,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ProductCard } from '../../src/frontend/src/components/ProductCard';
 import { CartProvider } from '../../src/frontend/src/context/CartContext';
 import { LocaleProvider } from '../../src/frontend/src/context/LocaleContext';
-import { PRODUCTS, Product } from '../../src/frontend/src/data/products';
+import { Product } from '../../src/frontend/src/data/products';
+import { MOCK_PRODUCTS } from './mockProducts';
 
-const sampleProduct: Product = PRODUCTS[0];
+const sampleProduct: Product = MOCK_PRODUCTS[0];
 
 const TestHarness: React.FC<{ product: Product; onSelect?: (p: Product) => void }> = ({
   product,

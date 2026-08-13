@@ -1,9 +1,10 @@
 import React from 'react';
 import { useLocale } from '../context/LocaleContext';
-import { CATEGORIES, Category } from '../data/products';
+import { Category } from '../data/products';
 import { Disc, Zap, Wifi, CircleDot, Headphones, Volume2, Cable, ShieldCheck, Grid } from 'lucide-react';
 
 interface CategoryGridProps {
+  categories?: Category[];
   selectedCategoryId: string | null;
   onSelectCategory: (categoryId: string | null) => void;
 }
@@ -20,6 +21,7 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 export const CategoryGrid: React.FC<CategoryGridProps> = ({
+  categories = [],
   selectedCategoryId,
   onSelectCategory
 }) => {
@@ -43,7 +45,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        {CATEGORIES.map((cat: Category) => {
+        {categories.map((cat: Category) => {
           const isSelected = selectedCategoryId === cat.id;
           return (
             <button

@@ -1,15 +1,44 @@
-import { searchProducts, generateTextEmbedding } from '../../src/backend/src/services/searchService';
-
-jest.mock('@google-cloud/aiplatform', () => ({
-  v1: {
-    PredictionServiceClient: jest.fn().mockImplementation(() => ({
-      predict: jest.fn().mockRejectedValue(new Error('Vertex AI disabled in unit test mode'))
-    }))
+jest.mock('@google-cloud/aiplatform', () => {
+  class MockPredictionServiceClient {
+    predict() {
+      const mockValues = new Array(768).fill(1 / Math.sqrt(768)).map(v => ({ numberValue: v }));
+      return Promise.resolve([
+        {
+          predictions: [
+            {
+              structValue: {
+                fields: {
+                  embeddings: {
+                    structValue: {
+                      fields: {
+                        values: {
+                          listValue: {
+                            values: mockValues
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]);
+    }
   }
-}));
+  return {
+    v1: {
+      PredictionServiceClient: MockPredictionServiceClient
+    }
+  };
+});
+
+import { searchProducts, generateTextEmbedding } from '../../src/backend/src/services/searchService';
+import { mockExecuteSpannerSql } from './mockSpanner';
 
 jest.mock('../../src/backend/src/config/spanner', () => ({
-  executeSpannerSql: jest.fn().mockResolvedValue(null),
+  executeSpannerSql: jest.fn().mockImplementation((query) => mockExecuteSpannerSql(query)),
   projectId: 'hifi-shop-demo'
 }));
 

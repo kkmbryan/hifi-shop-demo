@@ -3,7 +3,8 @@ import { render, screen } from '@testing-library/react';
 import { SynergyWarning } from '../../src/frontend/src/components/SynergyWarning';
 import { CartProvider, useCart } from '../../src/frontend/src/context/CartContext';
 import { LocaleProvider, useLocale } from '../../src/frontend/src/context/LocaleContext';
-import { PRODUCTS, Product } from '../../src/frontend/src/data/products';
+import { Product } from '../../src/frontend/src/data/products';
+import { MOCK_PRODUCTS } from './mockProducts';
 
 const CartPopulator: React.FC<{ initialProducts: Product[]; targetLocale: 'zh-HK' | 'en-US' }> = ({ initialProducts, targetLocale }) => {
   const { addToCart } = useCart();
@@ -39,8 +40,8 @@ describe('SynergyWarning Component Tests', () => {
   });
 
   it('should display electrical impedance & tube amp warning when Feliks Audio Envy tube amp + Sennheiser HD 800 S are in cart', async () => {
-    const tubeAmp = PRODUCTS.find(p => p.id === 'prod-feliks-envy')!;
-    const highImpedanceHp = PRODUCTS.find(p => p.id === 'prod-sennheiser-hd800s')!;
+    const tubeAmp = MOCK_PRODUCTS.find(p => p.id === 'prod-feliks-envy')!;
+    const highImpedanceHp = MOCK_PRODUCTS.find(p => p.id === 'prod-sennheiser-hd800s')!;
 
     render(<TestHarness initialProducts={[tubeAmp, highImpedanceHp]} locale="zh-HK" />);
 
@@ -50,8 +51,8 @@ describe('SynergyWarning Component Tests', () => {
   });
 
   it('should display tube amp warning in English when locale is en-US', async () => {
-    const tubeAmp = PRODUCTS.find(p => p.id === 'prod-feliks-envy')!;
-    const highImpedanceHp = PRODUCTS.find(p => p.id === 'prod-sennheiser-hd800s')!;
+    const tubeAmp = MOCK_PRODUCTS.find(p => p.id === 'prod-feliks-envy')!;
+    const highImpedanceHp = MOCK_PRODUCTS.find(p => p.id === 'prod-sennheiser-hd800s')!;
 
     render(<TestHarness initialProducts={[tubeAmp, highImpedanceHp]} locale="en-US" />);
 
@@ -61,8 +62,8 @@ describe('SynergyWarning Component Tests', () => {
   });
 
   it('should display I2S digital interface synergy banner when streamer with I2S and R-2R DAC are in cart', async () => {
-    const i2sStreamer = PRODUCTS.find(p => p.id === 'prod-eversolo-dmp-a8')!;
-    const r2rDac = PRODUCTS.find(p => p.id === 'prod-denafrips-venus-ii')!;
+    const i2sStreamer = MOCK_PRODUCTS.find(p => p.id === 'prod-eversolo-dmp-a8')!;
+    const r2rDac = MOCK_PRODUCTS.find(p => p.id === 'prod-denafrips-venus-ii')!;
 
     render(<TestHarness initialProducts={[i2sStreamer, r2rDac]} locale="zh-HK" />);
 
@@ -72,8 +73,8 @@ describe('SynergyWarning Component Tests', () => {
   });
 
   it('should display McIntosh amp + B&W speakers impedance matching tip banner', async () => {
-    const mcIntoshAmp = PRODUCTS.find(p => p.id === 'prod-mcintosh-ma8950')!;
-    const bwSpeakers = PRODUCTS.find(p => p.id === 'prod-bw-804-d4')!;
+    const mcIntoshAmp = MOCK_PRODUCTS.find(p => p.id === 'prod-mcintosh-ma8950')!;
+    const bwSpeakers = MOCK_PRODUCTS.find(p => p.id === 'prod-bw-804-d4')!;
 
     render(<TestHarness initialProducts={[mcIntoshAmp, bwSpeakers]} locale="zh-HK" />);
 
@@ -83,8 +84,8 @@ describe('SynergyWarning Component Tests', () => {
   });
 
   it('should display default system synergy verification when 2 general compatible products are added', async () => {
-    const dac = PRODUCTS.find(p => p.id === 'prod-topping-d90-iii')!;
-    const streamer = PRODUCTS.find(p => p.id === 'prod-wiim-pro-plus')!;
+    const dac = MOCK_PRODUCTS.find(p => p.id === 'prod-topping-d90-iii')!;
+    const streamer = MOCK_PRODUCTS.find(p => p.id === 'prod-wiim-pro-plus')!;
 
     render(<TestHarness initialProducts={[dac, streamer]} locale="zh-HK" />);
 

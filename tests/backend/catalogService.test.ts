@@ -4,13 +4,12 @@ import {
   getProductById,
   getFacetedFilters,
   localizeCategory,
-  localizeProduct,
-  FALLBACK_PRODUCTS,
-  FALLBACK_CATEGORIES
+  localizeProduct
 } from '../../src/backend/src/services/catalogService';
+import { mockExecuteSpannerSql, MOCK_DB_PRODUCTS } from './mockSpanner';
 
 jest.mock('../../src/backend/src/config/spanner', () => ({
-  executeSpannerSql: jest.fn().mockResolvedValue(null),
+  executeSpannerSql: jest.fn().mockImplementation((query) => mockExecuteSpannerSql(query)),
   projectId: 'hifi-shop-demo'
 }));
 
@@ -31,7 +30,7 @@ describe('catalogService Unit Tests', () => {
     });
 
     it('should localize individual product attributes based on requested language', () => {
-      const rawProduct = FALLBACK_PRODUCTS[0]; // Chord Hugo TT 2
+      const rawProduct = MOCK_DB_PRODUCTS[0] as any; // Chord Hugo TT 2
       const localizedEn = localizeProduct(rawProduct, 'en-US');
       const localizedZh = localizeProduct(rawProduct, 'zh-HK');
 

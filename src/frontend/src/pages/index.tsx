@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { Header } from '../components/Header';
@@ -7,18 +7,16 @@ import { ProductCard } from '../components/ProductCard';
 import { SynergyWarning } from '../components/SynergyWarning';
 import { useLocale } from '../context/LocaleContext';
 import { useCart } from '../context/CartContext';
-import { PRODUCTS, CATEGORIES, Product, Category } from '../data/products';
+import { Product, Category, adaptProduct, adaptCategory } from '../data/products';
 import {
   SlidersHorizontal,
   RotateCcw,
   Sparkles,
   Search,
-  Cpu,
-  Volume2,
   X,
   ShoppingBag,
-  ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  Loader2
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -32,31 +30,74 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [maxBudget, setMaxBudget] = useState<number>(120000);
   const [selectedInterface, setSelectedInterface] = useState<string | null>(null);
   const [selectedProductModal, setSelectedProductModal] = useState<Product | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-// Available interface filter options
-const INTERFACE_OPTIONS = ['I2S', 'XLR', 'RCA', 'USB', 'Vacuum Tube 膽機'];
+  // Available interface filter options
+  const INTERFACE_OPTIONS = ['I2S', 'XLR', 'RCA', 'USB', 'Vacuum Tube 膽機'];
 
-// Preset acoustic search queries
-const PRESET_QUERIES = [
-  '溫暖人聲 解碼器 3萬以下',
-  'ultra-low jitter transport',
-  '300B 膽機 溫暖聲場',
-  'R-2R 精密電阻解碼器',
-  'I2S 網絡串流播放器'
-];
+  // Preset acoustic search queries
+  const PRESET_QUERIES = [
+    '溫暖人聲 解碼器 3萬以下',
+    'ultra-low jitter transport',
+    '300B 膽機 溫暖聲場',
+    'R-2R 精密電阻解碼器',
+    'I2S 網絡串流播放器'
+  ];
 
-  // Hybrid Search & Multi-Faceted Filter Logic
+  // Live fetch search handler querying Backend API /api/v1/search (Cloud Spanner BM25 + Vector KNN)
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setSearchResults(null);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const controller = new AbortController();
+
+    const apiBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.BACKEND_API_URL ||
+      (typeof window !== 'undefined' && window.location.port === '3000' ? 'http://localhost:8080' : '');
+
+    const searchUrl = `${apiBaseUrl}/api/v1/search?q=${encodeURIComponent(trimmed)}&limit=100`;
+
+    fetch(searchUrl, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Search request failed with status ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        const rawProducts = data?.data?.products || data?.products || [];
+        const adapted = rawProducts.map(adaptProduct);
+        setSearchResults(adapted);
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Error calling Spanner search API:', err);
+        }
+      })
+      .finally(() => {
+        setIsSearching(false);
+      });
+
+    return () => controller.abort();
+  }, [searchQuery]);
+
+  // Dynamic Product Filtering (combining Backend Search Results & Multi-Faceted UI Filters)
   const filteredProducts = useMemo(() => {
-    let list = [...initialProducts];
+    let list = searchQuery.trim() && searchResults !== null ? [...searchResults] : [...initialProducts];
 
     // 1. Category Filter
     if (selectedCategory) {
-      list = list.filter((p) => p.categoryId === selectedCategory);
+      list = list.filter((p) => p.categoryId === selectedCategory || p.category_id === selectedCategory);
     }
 
     // 2. Max Budget Filter (Strictly HKD $)
@@ -71,80 +112,13 @@ const PRESET_QUERIES = [
       }
     }
 
-    // 4. Hybrid Keyword + Acoustic Vector Query Simulation
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-
-      // Check for price query keywords (e.g. "3萬以下", "under 30k")
-      let parsedMaxPrice: number | null = null;
-      if (q.includes('3萬') || q.includes('30k')) parsedMaxPrice = 30000;
-      else if (q.includes('5萬') || q.includes('50k')) parsedMaxPrice = 50000;
-      else if (q.includes('10萬') || q.includes('100k')) parsedMaxPrice = 100000;
-
-      if (parsedMaxPrice !== null) {
-        list = list.filter((p) => p.priceHkd <= parsedMaxPrice!);
-      }
-
-      // Relevance score calculation combining BM25 keyword matching & dense vector acoustic similarity
-      list = list
-        .map((p) => {
-          let score = 0;
-          const nameEn = p.nameEn.toLowerCase();
-          const nameZh = p.nameZh.toLowerCase();
-          const brand = p.brand.toLowerCase();
-          const model = p.model.toLowerCase();
-          const descEn = p.descriptionEn.toLowerCase();
-          const descZh = p.descriptionZh.toLowerCase();
-          const acEn = p.acousticSignatureEn.toLowerCase();
-          const acZh = p.acousticSignatureZh.toLowerCase();
-          const tagsStr = p.tags.join(' ').toLowerCase();
-
-          // BM25 Exact match scores
-          if (brand.includes(q)) score += 50;
-          if (model.includes(q)) score += 50;
-          if (nameEn.includes(q) || nameZh.includes(q)) score += 40;
-
-          // Acoustic semantic terms (Vector Similarity simulation)
-          if (q.includes('溫暖') || q.includes('warm') || q.includes('人聲') || q.includes('vocal')) {
-            if (acZh.includes('溫暖') || acZh.includes('人聲') || acEn.includes('warm') || acEn.includes('vocal')) {
-              score += 35;
-            }
-          }
-          if (q.includes('分析') || q.includes('analytical') || q.includes('低噪') || q.includes('noise')) {
-            if (acZh.includes('分析') || acEn.includes('analytical') || descEn.includes('jitter')) {
-              score += 35;
-            }
-          }
-          if (q.includes('膽') || q.includes('tube')) {
-            if (p.isTube || tagsStr.includes('tube') || nameZh.includes('膽')) {
-              score += 45;
-            }
-          }
-          if (q.includes('r-2r') || q.includes('r2r')) {
-            if (tagsStr.includes('r-2r') || descEn.includes('r-2r')) score += 45;
-          }
-          if (q.includes('i2s')) {
-            if (p.interfaces.includes('I2S') || tagsStr.includes('i2s')) score += 45;
-          }
-
-          // General text match
-          if (descEn.includes(q) || descZh.includes(q)) score += 15;
-          if (acEn.includes(q) || acZh.includes(q)) score += 20;
-
-          return { product: p, score };
-        })
-        .filter((item) => item.score > 0 || (q.length > 0 && item.product.priceHkd <= (parsedMaxPrice || Infinity)))
-        .sort((a, b) => b.score - a.score)
-        .map((item) => item.product);
-    }
-
     return list;
-  }, [initialProducts, selectedCategory, maxBudget, selectedInterface, searchQuery]);
+  }, [initialProducts, searchResults, searchQuery, selectedCategory, maxBudget, selectedInterface]);
 
   // Memoized category object lookup for selected category badge
   const selectedCategoryObj = useMemo(() => {
     if (!selectedCategory) return null;
-    return categories.find((c) => c.id === selectedCategory) || null;
+    return categories.find((c) => c.id === selectedCategory || c.category_id === selectedCategory) || null;
   }, [categories, selectedCategory]);
 
   const resetFilters = useCallback(() => {
@@ -160,7 +134,7 @@ const PRESET_QUERIES = [
         <title>{t('siteTitle')}</title>
         <meta
           name="description"
-          content="Premium Hi-Fi E-Commerce Demo Platform inspired by Aria Audio featuring Cloud Spanner Hybrid Search in HKD currency."
+          content="Premium Hi-Fi E-Commerce Platform inspired by Aria Audio featuring Cloud Spanner Hybrid Search in HKD currency."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -201,6 +175,7 @@ const PRESET_QUERIES = [
 
           {/* 8 Core Audio Category Selector */}
           <CategoryGrid
+            categories={categories}
             selectedCategoryId={selectedCategory}
             onSelectCategory={setSelectedCategory}
           />
@@ -309,7 +284,16 @@ const PRESET_QUERIES = [
                 )}
               </div>
 
-              {filteredProducts.length === 0 ? (
+              {isSearching ? (
+                <div className="p-12 text-center bg-slate-900/50 rounded-xl border border-slate-800 space-y-3 flex flex-col items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                  <p className="text-slate-400 text-sm">
+                    {locale === 'zh-HK'
+                      ? '正在查詢 Cloud Spanner 雙引擎搜尋 (BM25 + 768d Vector KNN)...'
+                      : 'Querying Cloud Spanner Hybrid Search (BM25 + 768d Vector KNN)...'}
+                  </p>
+                </div>
+              ) : filteredProducts.length === 0 ? (
                 <div className="p-12 text-center bg-slate-900/50 rounded-xl border border-slate-800 space-y-3">
                   <Search className="w-10 h-10 text-slate-600 mx-auto stroke-1" />
                   <p className="text-slate-400 text-sm">{t('noProductsFound')}</p>
@@ -375,7 +359,7 @@ const PRESET_QUERIES = [
 
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
                 <h4 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                  <Volume2 className="w-4 h-4" />
+                  <Search className="w-4 h-4" />
                   <span>{t('acousticSignature')}</span>
                 </h4>
                 <p className="text-xs text-slate-200 italic leading-relaxed">
@@ -411,10 +395,41 @@ const PRESET_QUERIES = [
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
-  return {
-    props: {
-      initialProducts: PRODUCTS,
-      categories: CATEGORIES,
-    },
-  };
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'http://localhost:8080';
+
+  try {
+    const [categoriesRes, productsRes] = await Promise.all([
+      fetch(`${apiBaseUrl}/api/v1/categories`),
+      fetch(`${apiBaseUrl}/api/v1/products?limit=100`)
+    ]);
+
+    let categories: Category[] = [];
+    if (categoriesRes.ok) {
+      const catData = await categoriesRes.json();
+      const rawCategories = catData?.data?.categories || catData?.categories || [];
+      categories = rawCategories.map(adaptCategory);
+    }
+
+    let initialProducts: Product[] = [];
+    if (productsRes.ok) {
+      const prodData = await productsRes.json();
+      const rawProducts = prodData?.data?.products || prodData?.products || [];
+      initialProducts = rawProducts.map(adaptProduct);
+    }
+
+    return {
+      props: {
+        initialProducts,
+        categories,
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching catalog in getServerSideProps:', error);
+    return {
+      props: {
+        initialProducts: [],
+        categories: [],
+      },
+    };
+  }
 };

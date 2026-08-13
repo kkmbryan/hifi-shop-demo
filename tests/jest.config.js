@@ -6,6 +6,8 @@ module.exports = {
   roots: ['<rootDir>/backend', '<rootDir>/frontend'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {
+    '^@google-cloud/aiplatform$': path.resolve(__dirname, 'node_modules/@google-cloud/aiplatform'),
+    '^@google-cloud/spanner$': path.resolve(__dirname, 'node_modules/@google-cloud/spanner'),
     '^react$': path.resolve(__dirname, 'node_modules/react'),
     '^react-dom$': path.resolve(__dirname, 'node_modules/react-dom'),
     '^react-dom/(.*)$': path.resolve(__dirname, 'node_modules/react-dom/$1'),

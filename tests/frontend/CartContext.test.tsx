@@ -2,13 +2,13 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CartProvider, useCart, formatHkdPrice } from '../../src/frontend/src/context/CartContext';
-import { PRODUCTS } from '../../src/frontend/src/data/products';
+import { MOCK_PRODUCTS } from './mockProducts';
 
 const TestCartComponent: React.FC = () => {
   const { cart, addToCart, removeFromCart, updateQuantity, clearCart, totalPriceHkd, totalCount, formatHkd } = useCart();
 
-  const mockProduct1 = PRODUCTS.find(p => p.id === 'prod-chord-hugo-tt2') || PRODUCTS[0];
-  const mockProduct2 = PRODUCTS.find(p => p.id === 'prod-sennheiser-hd800s') || PRODUCTS[1];
+  const mockProduct1 = MOCK_PRODUCTS.find(p => p.id === 'prod-chord-hugo-tt2') || MOCK_PRODUCTS[0];
+  const mockProduct2 = MOCK_PRODUCTS.find(p => p.id === 'prod-sennheiser-hd800s') || MOCK_PRODUCTS[1];
 
   return (
     <div>
