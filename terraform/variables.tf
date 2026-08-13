@@ -19,5 +19,5 @@ variable "spanner_processing_units" {
 variable "bucket_name" {
   description = "The name of the Google Cloud Storage bucket."
   type        = string
-  default     = "hifi-shop-demo-assets"
+  default     = "bryanko-hifi-shop-demo-assets"
 }

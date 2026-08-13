@@ -79,7 +79,7 @@ categories = [
     }
 ]
 
-prod_blocks = sql.split('INSERT INTO Products (')
+prod_blocks = re.split(r'INSERT (?:OR UPDATE )?INTO Products \(', sql)
 products = []
 
 for block in prod_blocks[1:]:

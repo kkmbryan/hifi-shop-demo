@@ -117,7 +117,7 @@ class SeedDataParser:
             content = f.read()
 
         product_blocks = re.findall(
-            r"INSERT INTO Products \((.*?)\) VALUES \((.*?)\);", content, re.DOTALL
+            r"INSERT (?:OR UPDATE )?INTO Products \((.*?)\) VALUES \((.*?)\);", content, re.DOTALL
         )
 
         products = []

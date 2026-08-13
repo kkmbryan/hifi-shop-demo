@@ -33,6 +33,8 @@ resource "google_vpc_access_connector" "vpc_connector" {
   region        = var.region
   ip_cidr_range = "10.8.0.0/28"
   network       = google_compute_network.hifi_vpc.name
+  min_instances = 2
+  max_instances = 10
 }
 
 # 4. Cloud Spanner Instance
@@ -64,9 +66,9 @@ resource "google_storage_bucket" "assets_bucket" {
   }
 }
 
-# GCS Public Read IAM Binding
-resource "google_storage_bucket_iam_member" "public_read" {
-  bucket = google_storage_bucket.assets_bucket.name
-  role   = "roles/storage.objectViewer"
-  member = "allUsers"
-}
+# GCS Public Read IAM Binding (Note: allUsers blocked by GCP Org Domain Restricted Sharing Policy)
+# resource "google_storage_bucket_iam_member" "public_read" {
+#   bucket = google_storage_bucket.assets_bucket.name
+#   role   = "roles/storage.objectViewer"
+#   member = "allUsers"
+# }

@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Configuration with defaults
 PROJECT_ID="${GCP_PROJECT_ID:-}"
-REGION="${GCP_REGION:-us-central1}"
-BUCKET_NAME="${GCS_BUCKET_NAME:-hifi-shop-demo-assets}"
+REGION="${GCP_REGION:-asia-east2}"
+BUCKET_NAME="${GCS_BUCKET_NAME:-bryanko-hifi-shop-demo-assets}"
 BUCKET_URI="gs://${BUCKET_NAME}"
 
 echo "=================================================="
@@ -36,7 +36,7 @@ echo "[INFO] Configuring public IAM access (allUsers -> roles/storage.objectView
 gcloud storage buckets add-iam-policy-binding "${BUCKET_URI}" \
   --member="allUsers" \
   --role="roles/storage.objectViewer" \
-  "${PROJECT_FLAG[@]}"
+  "${PROJECT_FLAG[@]}" || echo "[WARN] Public IAM binding skipped due to GCP Org Domain Restricted Sharing policy."
 
 # 3. Configure CORS headers for web access
 echo "[INFO] Configuring CORS headers..."

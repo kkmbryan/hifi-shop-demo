@@ -4,8 +4,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const projectId = process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'hifi-shop-demo';
-export const instanceId = process.env.SPANNER_INSTANCE_ID || 'hifi-spanner-instance';
-export const databaseId = process.env.SPANNER_DATABASE_ID || 'hifi-db';
+export const instanceId = process.env.SPANNER_INSTANCE_ID || process.env.SPANNER_INSTANCE || 'hifi-shop-spanner';
+export const databaseId = process.env.SPANNER_DATABASE_ID || process.env.SPANNER_DATABASE || 'hifi-shop-db';
 
 let spannerClient: Spanner | null = null;
 let databaseClient: Database | null = null;

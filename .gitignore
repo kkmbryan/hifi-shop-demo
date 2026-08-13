@@ -33,3 +33,4 @@ skills-lock.json
 scripts/generated_images/
 scripts/generated_images/
 terraform/.terraform/
+*.tfstate*

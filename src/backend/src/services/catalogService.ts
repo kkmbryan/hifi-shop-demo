@@ -146,7 +146,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: 'Hugo TT 2 是一款突破性的桌面級解碼耳擴一體機，配備客製化 FPGA 濾波器及 98,304 Tap WTA 演算法，提供無可比擬的聲學深度與動態展現。',
     acoustic_signature_en: 'Crystal-clear soundstage, ultra-fast transient response, articulate micro-detail rendering, and explosive dynamic headroom.',
     acoustic_signature_zh: '音場極度廣闊清晰，瞬態響應速度極快，微細節豐富，動態起伏澎湃有力。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/chord-hugo-tt2.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/chord-hugo-tt2.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-chord-hugo-tt2', spec_key: 'dac_chip', spec_value_en: 'Custom Xilinx Artix-7 FPGA (98,304 Taps)', spec_value_zh: '客製化 Xilinx Artix-7 FPGA (98,304 Taps)', is_filter_facet: true },
@@ -166,7 +166,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '採用真平衡分立式 R-2R 架構，配備高精度金屬膜電阻網絡與 TCXO 超低相位雜訊晶振。',
     acoustic_signature_en: 'Warm analog-like musicality, lush natural vocals, rich body, smooth liquid treble without digital glare.',
     acoustic_signature_zh: '具備濃郁黑膠般溫暖人聲，聲音厚實自然，高頻順滑流暢，完全沒有數位味。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/denafrips-venus-ii.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/denafrips-venus-ii.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-denafrips-venus-ii', spec_key: 'dac_chip', spec_value_en: 'True 24-Bit R-2R + 6-Bit DSD Architecture', spec_value_zh: '真 24-Bit R-2R + 6-Bit DSD 架構', is_filter_facet: true },
@@ -186,7 +186,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '搭載雙 ESS ES9039SPRO 旗艦晶片，配合 CPLD 超低時基誤差時鐘處理及藍芽 5.1 LDAC 無損傳輸。',
     acoustic_signature_en: 'Extremely analytical, ultra-low background noise floor, precise instrument separation, and neutral uncolored presentation.',
     acoustic_signature_zh: '極具分析力，底噪極低，樂器定位精確，聲音中性無渲染。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/topping-d90-iii.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/topping-d90-iii.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-topping-d90-iii', spec_key: 'input_interface', spec_value_en: 'IIS, AES, Coaxial, Optical, USB, Bluetooth', spec_value_zh: 'IIS, AES, 同軸, 光纖, USB, 藍芽', is_filter_facet: true },
@@ -205,7 +205,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '全能型桌面解碼耳擴一體機，支援 aptX Lossless 無損藍芽，配備 GMT 超低時基誤差時鐘及 5,551mW 強勁輸出。',
     acoustic_signature_en: 'Energetic sound profile, warm-tilted mid-bass response, engaging vocals, and versatile headphone drive power.',
     acoustic_signature_zh: '聲音充滿活力，中低頻包圍感強，人聲感染力高，耳機推力強勁。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/ifi-neo-idsd-2.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/ifi-neo-idsd-2.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-ifi-neo-idosd-2', spec_key: 'output_power_mw', spec_value_en: '5551mW @ 32 ohms', spec_value_zh: '5551毫瓦 @ 32 歐姆', is_filter_facet: true },
@@ -224,7 +224,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '每聲道 200 瓦高級立體聲合併式擴音機，配備麥景圖專利 Autoformer 輸出變壓器、DA2 數碼模組及經典藍眼睛錶板。',
     acoustic_signature_en: 'Authoritative dynamic impact, warm velvet midrange, expansive bass control, and legendary McIntosh musical presence.',
     acoustic_signature_zh: '音色雄渾大氣，中頻如絲絨般溫暖，低頻控制力極佳，展現麥景圖經典音樂味。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/mcintosh-ma8950.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/mcintosh-ma8950.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-mcintosh-ma8950', spec_key: 'output_power_w', spec_value_en: '200 Watts/Ch into 2/4/8 ohms', spec_value_zh: '每聲道 200 瓦 (2/4/8 歐姆)', is_filter_facet: true },
@@ -244,7 +244,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '日本頂級合併式擴音機，配備 AAVA 革命性音量控制系統、儀錶級放大電路及 MOS-FET 靜音開關。',
     acoustic_signature_en: 'Delicate, silky high frequencies, refined acoustic texturing, highly stable damping, and sweet articulate vocals.',
     acoustic_signature_zh: '高頻細緻如絲，樂器質感極佳，阻尼係數高且控制力好，人聲甜美耐聽。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/accuphase-e380.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/accuphase-e380.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-accuphase-e380', spec_key: 'output_power_w', spec_value_en: '120W into 8 ohms, 180W into 4 ohms', spec_value_zh: '每聲道 120瓦 (8歐姆) / 180瓦 (4歐姆)', is_filter_facet: true },
@@ -263,7 +263,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: 'Class A 單端三極管 (SET) 旗艦耳機擴音機，由傳奇 300B 真空管驅動，呈現無比有機的類比溫暖感。',
     acoustic_signature_en: 'Lush 300B tube midrange warmth, wide holographic 3D soundstage, sweet natural harmonics, and liquid musical flow.',
     acoustic_signature_zh: '濃郁 300B 真空管中頻溫暖感，廣闊立體 3D 音場，諧音甜美自然，音樂感極致順滑。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/feliks-envy.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/feliks-envy.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-feliks-envy', spec_key: 'tube_complement', spec_value_en: '300B Power Tubes x2, CV181 (6SN7) Driver Tubes x2', spec_value_zh: '300B 功率管 x2, CV181 (6SN7) 驅動管 x2', is_filter_facet: true },
@@ -285,7 +285,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '高性能合併式擴音機，配備 Rega 高規格解碼電路、MM 黑膠唱頭放大器及 Class A 驅動級。',
     acoustic_signature_en: 'Rhythmic pace, energetic musical timing, clean dynamic attack, and warm natural vocal presentation.',
     acoustic_signature_zh: '節奏感強烈，音樂時序動態極佳，衝擊力強，人聲表現溫暖自然。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/rega-elex-mk4.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/rega-elex-mk4.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-rega-elex-mk4', spec_key: 'output_power_w', spec_value_en: '72W/Ch into 8 ohms, 90W/Ch into 6 ohms', spec_value_zh: '每聲道 72瓦 (8歐姆) / 90瓦 (6歐姆)', is_filter_facet: true },
@@ -304,7 +304,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '參考級數碼轉盤音樂伺服器，配備雙 NVMe SSD 快取、超級電容 UPS 及獨立 Audio Class 2.0 USB 輸出。',
     acoustic_signature_en: 'Ultra-low digital jitter, pitch-black background, liquid micro-details, absolute spatial stability.',
     acoustic_signature_zh: '數位時基誤差極低，背景深邃漆黑，微細節豐富順滑，聲場定位極其穩定。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/aurender-n200.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/aurender-n200.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-aurender-n200', spec_key: 'output_interface', spec_value_en: 'Audio Class 2.0 USB, Ultra-Low Jitter Coaxial BNC', spec_value_zh: '獨立 Audio Class 2.0 USB, 超低時基誤差 BNC 同軸', is_filter_facet: true }
@@ -322,7 +322,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '全新升級運算底盤，採用雙 ESS SABRE ES9028PRO 解碼晶片、Leedh Processing 無損數碼音量控制及原創 DSD512 支援。',
     acoustic_signature_en: 'Smooth analog warmth, pristine digital clarity, effortlessly dynamic, natural vocal timbre.',
     acoustic_signature_zh: '具備順滑的類比溫暖感，數碼清晰度極高，動態自然順暢，人聲音色自然。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/lumin-t3.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/lumin-t3.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-lumin-t3', spec_key: 'output_interface', spec_value_en: 'XLR Balanced, RCA, BNC SPDIF, USB', spec_value_zh: 'XLR 平衡, RCA, BNC SPDIF, USB', is_filter_facet: true }
@@ -340,7 +340,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '旗艦串流前級解碼器，採用 AK4499EX + AK4191EQ 旗艦解碼組合、R2R 類比音量控制及雙 FEMTO 時鐘。',
     acoustic_signature_en: 'Rich natural texture, spacious 3D imaging, detailed extension, and transparent preamp volume control.',
     acoustic_signature_zh: '質感豐富自然，3D 聲像空間感強，高頻延伸細緻，前級音量控制透明度高。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/eversolo-dmp-a8.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/eversolo-dmp-a8.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-eversolo-dmp-a8', spec_key: 'input_interface', spec_value_en: 'I2S HDMI, IIS, Coaxial, Optical, USB', spec_value_zh: 'I2S HDMI, IIS, 同軸, 光纖, USB', is_filter_facet: true },
@@ -359,7 +359,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '輕巧高解析度串流播放器，搭載 AKM AK4493SEQ 解碼晶片，支援 AirPlay 2、Spotify Connect、TIDAL Connect 及 Roon Ready。',
     acoustic_signature_en: 'Clean, transparent, musical, neutral balance, unbeatable price-to-performance ratio.',
     acoustic_signature_zh: '聲音乾淨透明，具備音樂感，平衡中性，性價比極高。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/wiim-pro-plus.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/wiim-pro-plus.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-wiim-pro-plus', spec_key: 'output_interface', spec_value_en: 'RCA, Optical, Coaxial', spec_value_zh: 'RCA, 光纖, 同軸', is_filter_facet: true }
@@ -377,7 +377,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '經典精密模組化黑膠唱盤，採用 Karousel 精密軸承與 Radikal 電源，支援終身模組化升級。',
     acoustic_signature_en: 'Unmatched musical rhythm and timing, emotional vocal depth, organic analog realism.',
     acoustic_signature_zh: '音樂節奏與時序掌控無與倫比，人聲情感深刻，極致有機類比真實感。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/linn-sondek-lp12.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/linn-sondek-lp12.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-linn-sondek-lp12', spec_key: 'drive_method', spec_value_en: 'Precision Belt Drive', spec_value_zh: '精密皮帶驅動', is_filter_facet: true }
@@ -395,7 +395,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '德國手工打造參考級開放式動圈耳機，採用 56mm 環形振膜單元與專利吸收器技術。',
     acoustic_signature_en: 'Unrivaled concert-hall soundstage width, pinpoint orchestral instrument positioning, pristine micro-detail rendering, transparent neutral treble.',
     acoustic_signature_zh: '音樂廳級別廣闊音場，管弦樂器定位精確無瑕，微細節豐富，高頻清澈通透。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/sennheiser-hd800s.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/sennheiser-hd800s.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-sennheiser-hd800s', spec_key: 'impedance_ohms', spec_value_en: '300 ohms', spec_value_zh: '300 歐姆', is_filter_facet: true },
@@ -416,7 +416,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '法國奢華開放式旗艦耳機，採用 40mm 純鈹 M 形穹頂單元與銅鋁合金音圈。',
     acoustic_signature_en: 'Unmatched dynamic speed, visceral physical impact, luxurious vocal detail, pinpoint spatial imaging.',
     acoustic_signature_zh: '無可比擬的動態反應速度，衝擊力強，人聲細緻華麗，聲像定位極為精準。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/focal-utopia-2022.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/focal-utopia-2022.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-focal-utopia-2022', spec_key: 'impedance_ohms', spec_value_en: '80 ohms', spec_value_zh: '80 歐姆', is_filter_facet: true },
@@ -435,7 +435,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '德國手工打造混合單元入耳式耳機，結合 2 動圈與 4 靜電單元，人聲溫暖潤澤且高頻延伸驚人。',
     acoustic_signature_en: 'Deep thunderous sub-bass impact, lush organic vocals, extended electrostatic shimmer without harshness.',
     acoustic_signature_zh: '低頻下潛深遂有力，人聲溫暖潤澤，靜電高頻延伸極佳且毫無刺耳感。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/vision-ears-ext.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/vision-ears-ext.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-vision-ears-ext', spec_key: 'impedance_ohms', spec_value_en: '10 ohms', spec_value_zh: '10 歐姆', is_filter_facet: true },
@@ -454,7 +454,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '經典翠綠陽極氧化鋁耳機，配備 5 動鐵單元及實心一體化聲學腔體。',
     acoustic_signature_en: 'Holographic spatial expansion, sparkling treble detail, sweet forward mid-range, iconically musical tuning.',
     acoustic_signature_zh: '聲場空間感絕佳，高頻亮麗通透，中頻人聲甜美靠前，經典發燒調音。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/campfire-andromeda-2020.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/campfire-andromeda-2020.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-campfire-andromeda-2020', spec_key: 'impedance_ohms', spec_value_en: '12.8 ohms', spec_value_zh: '12.8 歐姆', is_filter_facet: true },
@@ -473,7 +473,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '旗艦落地式音箱，配備獨立實體鑽石高音單元、Continuum 錐盆 FST 中音及 Aerofoil 翼形低音單元。',
     acoustic_signature_en: 'Crystal-clean diamond high-frequency purity, solid tight bass extension, pinpoint orchestral imaging.',
     acoustic_signature_zh: '鑽石高音極致純淨，低頻結實下潛深，管弦樂團定位精確無瑕。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/bw-804-d4.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/bw-804-d4.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-bw-804-d4', spec_key: 'nominal_impedance_ohms', spec_value_en: '8 ohms', spec_value_zh: '8 歐姆', is_filter_facet: true },
@@ -492,7 +492,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     description_zh: '主動式無線音箱系統，採用第12代 Uni-Q 同軸單元、MAT 超材料吸音技術及 760W 總功放驅動。',
     acoustic_signature_en: 'Seamless Uni-Q point-source imaging, MAT absorbing clarity, tight bass impact, versatile streaming capability.',
     acoustic_signature_zh: 'Uni-Q 同軸單元點聲源定位完美，MAT 技術吸音通透，低頻下潛彈跳，無線串流極致方便。',
-    image_url: 'https://storage.googleapis.com/hifi-shop-demo-assets/products/kef-ls50-wireless-ii.jpg',
+    image_url: 'https://storage.googleapis.com/bryanko-hifi-shop-demo-assets/products/kef-ls50-wireless-ii.jpg',
     is_active: true,
     specifications: [
       { product_id: 'prod-kef-ls50-wireless-ii', spec_key: 'output_power_w', spec_value_en: '760W Total System Power', spec_value_zh: '760W 系統總功率', is_filter_facet: true }
