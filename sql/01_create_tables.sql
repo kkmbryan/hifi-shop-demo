@@ -45,6 +45,7 @@ CREATE TABLE Products (
   acoustic_signature_zh STRING(MAX),
   image_url STRING(1024),
   is_active BOOL NOT NULL DEFAULT (true),
+  search_tokens TOKENLIST AS (TOKENLIST_CONCAT([TOKENIZE_FULLTEXT(name_en), TOKENIZE_FULLTEXT(brand), TOKENIZE_FULLTEXT(model), TOKENIZE_FULLTEXT(category_id), TOKENIZE_FULLTEXT(description_en)])) HIDDEN,
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
   updated_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
   CONSTRAINT FK_Products_Categories FOREIGN KEY (category_id) REFERENCES Categories (category_id)

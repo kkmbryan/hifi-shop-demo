@@ -365,6 +365,47 @@ export async function mockExecuteSpannerSql(query: any): Promise<any[] | null> {
     return [{ count: list.length }];
   }
 
+  if (sqlString.includes('bm25_results') || sqlString.includes('candidate_ranks')) {
+    const q = (params.query_text || params.query || '').toLowerCase();
+    const bm25Matches = MOCK_DB_PRODUCTS.filter(p =>
+      p.is_active && (
+        p.name_en.toLowerCase().includes(q) ||
+        p.name_zh.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q) ||
+        p.model.toLowerCase().includes(q) ||
+        p.description_en.toLowerCase().includes(q) ||
+        p.description_zh.toLowerCase().includes(q)
+      )
+    );
+    const bm25Ranks = new Map<string, number>();
+    bm25Matches.forEach((p, idx) => bm25Ranks.set(p.product_id, idx + 1));
+
+    const vectorMatches = MOCK_DB_PRODUCTS.filter(p => p.is_active);
+    const vectorRanks = new Map<string, number>();
+    vectorMatches.forEach((p, idx) => vectorRanks.set(p.product_id, idx + 1));
+
+    const candidateIds = Array.from(new Set([...bm25Ranks.keys(), ...vectorRanks.keys()]));
+    const results = [];
+    for (const pid of candidateIds) {
+      const p = MOCK_DB_PRODUCTS.find(item => item.product_id === pid);
+      if (!p) continue;
+      const bRank = bm25Ranks.get(pid) || null;
+      const vRank = vectorRanks.get(pid) || null;
+      const bTerm = bRank ? 0.4 / (60 + bRank) : 0;
+      const vTerm = vRank ? 0.6 / (60 + vRank) : 0;
+      const rrfScore = bTerm + vTerm;
+      results.push({
+        ...p,
+        price_hkd: p.price_hkd,
+        rrf_score: rrfScore,
+        bm25_rank: bRank,
+        vector_rank: vRank
+      });
+    }
+    results.sort((a, b) => b.rrf_score - a.rrf_score);
+    return results;
+  }
+
   if (sqlString.includes('SEARCH(Products, @query)')) {
     const q = (params.query || '').toLowerCase();
     const matches = MOCK_DB_PRODUCTS.filter(p =>

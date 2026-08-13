@@ -45,3 +45,12 @@ CREATE INDEX idx_specs_key_facet ON ProductSpecifications (
   spec_value_en,
   spec_value_zh
 );
+
+
+-- -----------------------------------------------------------------------------
+-- 2. Cloud Spanner Full-Text Search Index
+-- Tokenized index on generated search_tokens column for BM25 hybrid search.
+-- -----------------------------------------------------------------------------
+CREATE SEARCH INDEX idx_products_search ON Products (
+  search_tokens
+);

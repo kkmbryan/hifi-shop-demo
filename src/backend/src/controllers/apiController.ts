@@ -133,7 +133,7 @@ export async function handleSearch(req: Request, res: Response, next: NextFuncti
   try {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
-    const q = (req.query.q as string || '').trim();
+    const q = ((req.query.q as string) || (req.query.query as string) || (req.query.search as string) || '').trim();
     const category = req.query.category as string;
     const brand = req.query.brand as string;
     const min_price = parseNumericParam(req.query.min_price);

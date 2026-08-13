@@ -11,6 +11,8 @@ module.exports = {
     '^react$': path.resolve(__dirname, 'node_modules/react'),
     '^react-dom$': path.resolve(__dirname, 'node_modules/react-dom'),
     '^react-dom/(.*)$': path.resolve(__dirname, 'node_modules/react-dom/$1'),
+    '^next/(.*)$': path.resolve(__dirname, '../src/frontend/node_modules/next/$1'),
+    '^next$': path.resolve(__dirname, '../src/frontend/node_modules/next'),
     '\\.(css|less|sass|scss)$': 'identity-obj-proxy',
   },
   transform: {

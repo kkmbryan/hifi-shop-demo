@@ -14,6 +14,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_BACKEND_API_URL
+ENV NEXT_PUBLIC_BACKEND_API_URL=$NEXT_PUBLIC_BACKEND_API_URL
+
 # Copy dependencies and application source
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -36,7 +41,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-# Copy Next.js build output
+# Copy Next.js build output and configuration
+COPY --from=builder /app/next.config.js ./next.config.js
 COPY --from=builder /app/.next ./.next
 
 # Set ownership to non-root node user

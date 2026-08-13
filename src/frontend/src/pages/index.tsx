@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Header } from '../components/Header';
 import { CategoryGrid } from '../components/CategoryGrid';
@@ -25,6 +26,7 @@ interface HomePageProps {
 }
 
 export default function HomePage({ initialProducts, categories }: HomePageProps) {
+  const router = useRouter();
   const { locale, t } = useLocale();
   const { addToCart, formatHkd } = useCart();
 
@@ -37,6 +39,39 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
   const [selectedInterface, setSelectedInterface] = useState<string | null>(null);
   const [selectedProductModal, setSelectedProductModal] = useState<Product | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // Sync initial and dynamic URL query param `q` into searchQuery state
+  useEffect(() => {
+    if (router.isReady && typeof router.query.q === 'string') {
+      if (router.query.q !== searchQuery) {
+        setSearchQuery(router.query.q);
+      }
+    }
+  }, [router.isReady, router.query.q]);
+
+  // Handler for user search input changes, updating searchQuery state and URL query parameter `q`
+  const handleSearchChange = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      if (router.isReady) {
+        const newQuery = { ...router.query };
+        if (query.trim()) {
+          newQuery.q = query;
+        } else {
+          delete newQuery.q;
+        }
+        router.replace(
+          {
+            pathname: router.pathname,
+            query: newQuery,
+          },
+          undefined,
+          { shallow: true }
+        );
+      }
+    },
+    [router]
+  );
 
   // Available interface filter options
   const INTERFACE_OPTIONS = ['I2S', 'XLR', 'RCA', 'USB', 'Vacuum Tube 膽機'];
@@ -63,11 +98,22 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
     const controller = new AbortController();
 
     const apiBaseUrl =
+      process.env.NEXT_PUBLIC_BACKEND_API_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
       process.env.BACKEND_API_URL ||
       (typeof window !== 'undefined' && window.location.port === '3000' ? 'http://localhost:8080' : '');
 
-    const searchUrl = `${apiBaseUrl}/api/v1/search?q=${encodeURIComponent(trimmed)}&limit=100`;
+    const params = new URLSearchParams({
+      q: trimmed,
+      limit: '100',
+      lang: locale || 'en-US',
+      max_price: String(maxBudget)
+    });
+    if (selectedCategory) {
+      params.set('category', selectedCategory);
+    }
+
+    const searchUrl = `${apiBaseUrl}/api/v1/search?${params.toString()}`;
 
     fetch(searchUrl, { signal: controller.signal })
       .then((res) => {
@@ -82,6 +128,7 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
       .catch((err) => {
         if (err.name !== 'AbortError') {
           console.error('Error calling Spanner search API:', err);
+          setSearchResults([]);
         }
       })
       .finally(() => {
@@ -89,7 +136,7 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
       });
 
     return () => controller.abort();
-  }, [searchQuery]);
+  }, [searchQuery, selectedCategory, maxBudget, locale]);
 
   // Dynamic Product Filtering (combining Backend Search Results & Multi-Faceted UI Filters)
   const filteredProducts = useMemo(() => {
@@ -122,11 +169,11 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
   }, [categories, selectedCategory]);
 
   const resetFilters = useCallback(() => {
-    setSearchQuery('');
+    handleSearchChange('');
     setSelectedCategory(null);
     setMaxBudget(120000);
     setSelectedInterface(null);
-  }, []);
+  }, [handleSearchChange]);
 
   return (
     <>
@@ -144,7 +191,7 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
         {/* Sticky Header with Search & Cart */}
         <Header
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
           onOpenFilters={() => setShowMobileFilters(!showMobileFilters)}
         />
 
@@ -261,7 +308,7 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
                   {PRESET_QUERIES.map((preset) => (
                     <button
                       key={preset}
-                      onClick={() => setSearchQuery(preset)}
+                      onClick={() => handleSearchChange(preset)}
                       className="w-full text-left text-xs text-slate-400 hover:text-amber-300 truncate transition-colors block py-0.5"
                     >
                       • "{preset}"
@@ -398,7 +445,7 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'http://localhost:8080';
+  const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'http://localhost:8080';
 
   try {
     const [categoriesRes, productsRes] = await Promise.all([

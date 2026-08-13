@@ -8,7 +8,7 @@
 | **Author** | Lead Database Architect |
 | **Target Audience** | Data Engineers, Solution Architects, Backend Engineers, DBA Team |
 | **Target Storage Engine**| Google Cloud Spanner (GoogleSQL Dialect) |
-| **Version** | 1.0.0 |
+| **Version** | 1.1.0 |
 | **Status** | Approved DDL Specification |
 | **Last Updated** | August 13, 2026 |
 
@@ -125,6 +125,7 @@ Master table containing core audiophile product records, HKD catalog pricing, lo
 | `acoustic_signature_zh` | `STRING(MAX)` | Yes | | Traditional Chinese summary of subjective acoustic characteristics. |
 | `image_url` | `STRING(1024)`| Yes | | Lossless GCS/CDN product image URL. |
 | `is_active` | `BOOL` | **No** | `DEFAULT (true)` | Product availability flag for search and catalog queries. |
+| `search_tokens` | `TOKENLIST` | **No** | `HIDDEN, AS (TOKENLIST_CONCAT(...))` | Generated TokenList column aggregating full-text search tokens. |
 | `created_at` | `TIMESTAMP` | **No** | `allow_commit_timestamp=true` | Record creation timestamp. |
 | `updated_at` | `TIMESTAMP` | **No** | `allow_commit_timestamp=true` | Record update timestamp. |
 
@@ -198,20 +199,18 @@ To configure interleaving, child tables define a composite primary key whose lea
 To handle exact model numbers (e.g. *"HD800S"*, *"D90 III"*) and localized brand names in dual-language environments (`en-US` and `zh-HK`), Cloud Spanner native `SEARCH INDEX` functionality is configured.
 
 ```sql
-CREATE SEARCH INDEX idx_products_bm25_search ON Products (
-  TOKENIZE_FULLTEXT(name_en),
-  TOKENIZE_FULLTEXT(brand),
-  TOKENIZE_FULLTEXT(model),
-  TOKENIZE_FULLTEXT(acoustic_signature_en),
-  TOKENIZE_FULLTEXT(description_en),
-  TOKENIZE_NGRAMS(name_zh, ngram_size_min=>1, ngram_size_max=>3),
-  TOKENIZE_NGRAMS(acoustic_signature_zh, ngram_size_min=>1, ngram_size_max=>3),
-  TOKENIZE_NGRAMS(description_zh, ngram_size_min=>1, ngram_size_max=>3)
-) STORING (
-  category_id,
-  price_hkd,
-  image_url,
-  is_active
+-- Generated TokenList column on Products table:
+-- search_tokens TOKENLIST AS (TOKENLIST_CONCAT([
+--   TOKENIZE_FULLTEXT(name_en),
+--   TOKENIZE_FULLTEXT(brand),
+--   TOKENIZE_FULLTEXT(model),
+--   TOKENIZE_FULLTEXT(category_id),
+--   TOKENIZE_FULLTEXT(description_en)
+-- ])) HIDDEN
+
+-- Full-Text Search Index on Products table:
+CREATE SEARCH INDEX idx_products_search ON Products (
+  search_tokens
 );
 ```
 
@@ -247,37 +246,41 @@ Values range from `0.0` (identical orientation / perfect acoustic match) to `2.0
 Backend search API executes parallel scoring using Reciprocal Rank Fusion (RRF) to merge keyword relevance and vector similarity:
 
 ```sql
-WITH bm25_scores AS (
-  SELECT 
-    product_id,
-    ROW_NUMBER() OVER(ORDER BY SCORE(idx_products_bm25_search) DESC) AS rank_bm25
-  FROM Products@{FORCE_INDEX=idx_products_bm25_search}
-  WHERE SEARCH(idx_products_bm25_search, @query_text)
+WITH bm25_results AS (
+  SELECT product_id
+  FROM Products@{FORCE_INDEX=idx_products_search}
+  WHERE SEARCH(search_tokens, @query_text) 
     AND is_active = true
+    AND LOWER(category_id) = LOWER(@category) -- Optional pushed filter predicate
+    AND price_hkd >= @min_price               -- Optional pushed filter predicate
+    AND price_hkd <= @max_price               -- Optional pushed filter predicate
+    AND LOWER(brand) LIKE @brand_pattern       -- Optional pushed filter predicate
   LIMIT 50
 ),
-vector_scores AS (
-  SELECT 
-    product_id,
-    ROW_NUMBER() OVER(ORDER BY COSINE_DISTANCE(embedding, @query_vector) ASC) AS rank_vector
-  FROM ProductEmbeddings@{FORCE_INDEX=idx_product_embeddings_cosine}
+vector_results AS (
+  SELECT e.product_id, COSINE_DISTANCE(e.embedding, @query_embedding) AS distance
+  FROM ProductEmbeddings e
+  JOIN Products p ON e.product_id = p.product_id
+  WHERE p.is_active = true
+    AND COSINE_DISTANCE(e.embedding, @query_embedding) <= 0.65 -- Relevance threshold cutoff
+    AND LOWER(p.category_id) = LOWER(@category)               -- Optional pushed filter predicate
+    AND p.price_hkd >= @min_price                              -- Optional pushed filter predicate
+    AND p.price_hkd <= @max_price                              -- Optional pushed filter predicate
+    AND LOWER(p.brand) LIKE @brand_pattern                      -- Optional pushed filter predicate
+  ORDER BY distance ASC
   LIMIT 50
+),
+candidates AS (
+  SELECT product_id FROM bm25_results
+  UNION DISTINCT
+  SELECT product_id FROM vector_results
 )
-SELECT 
-  p.product_id,
-  p.brand,
-  p.model,
-  p.name_en,
-  p.name_zh,
-  p.price_hkd,
-  p.image_url,
-  (COALESCE(0.4 / (60 + b.rank_bm25), 0.0) + COALESCE(0.6 / (60 + v.rank_vector), 0.0)) AS rrf_score
-FROM Products p
-LEFT JOIN bm25_scores b ON p.product_id = b.product_id
-LEFT JOIN vector_scores v ON p.product_id = v.product_id
-WHERE b.product_id IS NOT NULL OR v.product_id IS NOT NULL
-ORDER BY rrf_score DESC
-LIMIT 20;
+SELECT p.product_id, p.category_id, p.brand, p.model, p.name_en, p.name_zh,
+       CAST(p.price_hkd AS FLOAT64) AS price_hkd, p.description_en, p.description_zh,
+       p.acoustic_signature_en, p.acoustic_signature_zh, p.image_url, p.is_active
+FROM candidates c
+JOIN Products p ON c.product_id = p.product_id
+WHERE p.is_active = true;
 ```
 
 ---
