@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Product } from '../data/products';
 import { useLocale } from '../context/LocaleContext';
 import { useCart } from '../context/CartContext';
@@ -8,7 +8,6 @@ interface ProductCardProps {
   product: Product;
   onSelectProduct?: (product: Product) => void;
 }
-
 
 const getCategoryIcon = (categoryId?: string) => {
   const cat = (categoryId || '').toLowerCase();
@@ -37,9 +36,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
 
   const hasValidImageUrl = Boolean(product.imageUrl && product.imageUrl.trim().length > 0);
   const showFallback = !hasValidImageUrl || imgError;
-  const CategoryIcon = getCategoryIcon(product.categoryId || product.category_id);
+  const CategoryIcon = useMemo(
+    () => getCategoryIcon(product.categoryId || product.category_id),
+    [product.categoryId, product.category_id]
+  );
 
-  const isInCart = cart.some((item) => item.product.id === product.id);
+  const isInCart = useMemo(
+    () => cart.some((item) => item.product.id === product.id),
+    [cart, product.id]
+  );
 
   const title = locale === 'zh-HK' ? product.nameZh : product.nameEn;
   const description = locale === 'zh-HK' ? product.descriptionZh : product.descriptionEn;
@@ -52,8 +57,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
         {!showFallback ? (
           <>
             {!imgLoaded && (
-              <div className="absolute inset-0 bg-slate-900 animate-pulse flex items-center justify-center text-slate-700">
-                <CategoryIcon className="w-8 h-8 animate-spin text-slate-600" />
+              <div className="absolute inset-0 bg-slate-900 animate-pulse flex items-center justify-center text-slate-700 z-10">
+                <CategoryIcon className="w-8 h-8 animate-pulse text-slate-600" />
               </div>
             )}
             <img
@@ -63,7 +68,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
               decoding="async"
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
-              className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${
+              className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 ${
                 imgLoaded ? 'opacity-100' : 'opacity-0'
               }`}
             />
@@ -83,12 +88,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
         )}
 
         {/* Brand Badge Overlay */}
-        <div className="absolute top-2 left-2 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-md border border-slate-700 text-xs font-bold text-amber-400">
+        <div className="absolute top-2 left-2 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-md border border-slate-700 text-xs font-bold text-amber-400 z-20">
           {product.brand}
         </div>
 
         {/* Price Tag Overlay (Strictly HKD $) */}
-        <div className="absolute bottom-2 right-2 bg-amber-500/95 text-slate-950 px-3 py-1 rounded-md font-black text-sm shadow-md">
+        <div className="absolute bottom-2 right-2 bg-amber-500/95 text-slate-950 px-3 py-1 rounded-md font-black text-sm shadow-md z-20">
           {formatHkd(product.priceHkd)}
         </div>
       </div>
