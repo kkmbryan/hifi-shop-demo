@@ -68,7 +68,7 @@ erDiagram
     }
 
     ProductSpecifications {
-        string product_id PK_FK "STRING(64) - Interleaved Parent PK"
+        string product_id PK, FK "STRING(64) - Interleaved Parent PK"
         string spec_key PK "STRING(128)"
         string spec_value_en "STRING(512)"
         string spec_value_zh "STRING(512)"
@@ -77,7 +77,7 @@ erDiagram
     }
 
     ProductEmbeddings {
-        string product_id PK_FK "STRING(64) - Interleaved Parent PK"
+        string product_id PK, FK "STRING(64) - Interleaved Parent PK"
         string embedding_provider "STRING(64)"
         int64 embedding_dimensions "INT64"
         array_float64 embedding "ARRAY<FLOAT64>"
