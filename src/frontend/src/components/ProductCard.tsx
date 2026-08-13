@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '../data/products';
 import { useLocale } from '../context/LocaleContext';
 import { useCart } from '../context/CartContext';
-import { ShoppingBag, Check, Disc, Volume2, Cpu, ShieldAlert } from 'lucide-react';
+import { ShoppingBag, Check, Disc, Volume2 } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -13,6 +13,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
   const { locale, t } = useLocale();
   const { cart, addToCart, formatHkd } = useCart();
   const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  // Reset image load/error state when product or image URL changes
+  useEffect(() => {
+    setImgError(false);
+    setImgLoaded(false);
+  }, [product.id, product.imageUrl]);
+
+  const hasValidImageUrl = Boolean(product.imageUrl && product.imageUrl.trim().length > 0);
+  const showFallback = !hasValidImageUrl || imgError;
 
   const isInCart = cart.some((item) => item.product.id === product.id);
 
@@ -22,20 +32,37 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
 
   return (
     <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl overflow-hidden shadow-lg hover:border-amber-500/50 hover:shadow-amber-500/5 transition-all flex flex-col group">
-      {/* Image Header Container */}
+      {/* Image Header Container with Robust Fallback Placeholder Handling */}
       <div className="relative aspect-video bg-slate-950 overflow-hidden border-b border-slate-700/60 flex items-center justify-center">
-        {!imgError ? (
-          <img
-            src={product.imageUrl}
-            alt={title}
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+        {!showFallback ? (
+          <>
+            {!imgLoaded && (
+              <div className="absolute inset-0 bg-slate-900 animate-pulse flex items-center justify-center text-slate-700">
+                <Disc className="w-8 h-8 animate-spin" />
+              </div>
+            )}
+            <img
+              src={product.imageUrl}
+              alt={title}
+              loading="lazy"
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+              className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${
+                imgLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          </>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-900 to-slate-950 text-slate-500">
-            <Disc className="w-12 h-12 text-slate-700 mb-2 animate-spin-slow" />
-            <span className="text-xs font-mono font-bold text-amber-500/80">{product.brand}</span>
-            <span className="text-xs text-slate-400 text-center font-sans mt-1">{product.model}</span>
+          <div
+            role="img"
+            aria-label={`${product.brand} ${product.model} placeholder`}
+            className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-500 select-none"
+          >
+            <div className="p-3 rounded-full bg-slate-900/80 border border-slate-800 text-amber-500/80 mb-2 shadow-inner">
+              <Disc className="w-8 h-8 text-slate-600" />
+            </div>
+            <span className="text-xs font-mono font-bold text-amber-500/80 tracking-wide">{product.brand}</span>
+            <span className="text-xs text-slate-400 text-center font-sans mt-0.5 line-clamp-1 max-w-[90%]">{product.model}</span>
           </div>
         )}
 

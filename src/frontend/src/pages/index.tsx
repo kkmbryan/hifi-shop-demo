@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import { Header } from '../components/Header';
@@ -38,8 +38,17 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
   const [selectedProductModal, setSelectedProductModal] = useState<Product | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Available interface filter options
-  const interfaceOptions = ['I2S', 'XLR', 'RCA', 'USB', 'Vacuum Tube 膽機'];
+// Available interface filter options
+const INTERFACE_OPTIONS = ['I2S', 'XLR', 'RCA', 'USB', 'Vacuum Tube 膽機'];
+
+// Preset acoustic search queries
+const PRESET_QUERIES = [
+  '溫暖人聲 解碼器 3萬以下',
+  'ultra-low jitter transport',
+  '300B 膽機 溫暖聲場',
+  'R-2R 精密電阻解碼器',
+  'I2S 網絡串流播放器'
+];
 
   // Hybrid Search & Multi-Faceted Filter Logic
   const filteredProducts = useMemo(() => {
@@ -132,12 +141,18 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
     return list;
   }, [initialProducts, selectedCategory, maxBudget, selectedInterface, searchQuery]);
 
-  const resetFilters = () => {
+  // Memoized category object lookup for selected category badge
+  const selectedCategoryObj = useMemo(() => {
+    if (!selectedCategory) return null;
+    return categories.find((c) => c.id === selectedCategory) || null;
+  }, [categories, selectedCategory]);
+
+  const resetFilters = useCallback(() => {
     setSearchQuery('');
     setSelectedCategory(null);
     setMaxBudget(120000);
     setSelectedInterface(null);
-  };
+  }, []);
 
   return (
     <>
@@ -242,7 +257,7 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
                   {t('filterByInterface')}
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  {interfaceOptions.map((opt) => {
+                  {INTERFACE_OPTIONS.map((opt) => {
                     const isSelected = selectedInterface === opt;
                     return (
                       <button
@@ -268,13 +283,7 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
                   <span>{locale === 'zh-HK' ? '經典發燒語義搜尋關鍵字' : 'Acoustic Vector Preset Queries'}</span>
                 </span>
                 <div className="space-y-1.5">
-                  {[
-                    '溫暖人聲 解碼器 3萬以下',
-                    'ultra-low jitter transport',
-                    '300B 膽機 溫暖聲場',
-                    'R-2R 精密電阻解碼器',
-                    'I2S 網絡串流播放器'
-                  ].map((preset) => (
+                  {PRESET_QUERIES.map((preset) => (
                     <button
                       key={preset}
                       onClick={() => setSearchQuery(preset)}
@@ -293,11 +302,9 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
                 <span className="text-xs font-medium text-slate-400">
                   {t('resultsCount', { count: filteredProducts.length })}
                 </span>
-                {selectedCategory && (
+                {selectedCategoryObj && (
                   <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
-                    {locale === 'zh-HK'
-                      ? categories.find((c) => c.id === selectedCategory)?.nameZh
-                      : categories.find((c) => c.id === selectedCategory)?.nameEn}
+                    {locale === 'zh-HK' ? selectedCategoryObj.nameZh : selectedCategoryObj.nameEn}
                   </span>
                 )}
               </div>

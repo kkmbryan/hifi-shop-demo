@@ -1,6 +1,6 @@
 import { v1 as aiplatform } from '@google-cloud/aiplatform';
 import { executeSpannerSql, projectId } from '../config/spanner';
-import { FALLBACK_PRODUCTS, localizeProduct, Product } from './catalogService';
+import { FALLBACK_PRODUCTS, localizeProduct, Product, ProductSpecification } from './catalogService';
 
 export interface HybridSearchOptions {
   q: string;
@@ -30,13 +30,23 @@ const EMBEDDING_DIM = 768;
 /**
  * Generate 768-dimensional vector embedding for text using Vertex AI or fallback.
  */
-export async function generateTextEmbedding(text: string): Promise<number[]> {
-  try {
+let predictionServiceClientInstance: aiplatform.PredictionServiceClient | null = null;
+
+function getPredictionServiceClient(): aiplatform.PredictionServiceClient {
+  if (!predictionServiceClientInstance) {
     const location = process.env.GCP_LOCATION || 'us-central1';
     const clientOptions = {
       apiEndpoint: `${location}-aiplatform.googleapis.com`,
     };
-    const predictionServiceClient = new aiplatform.PredictionServiceClient(clientOptions);
+    predictionServiceClientInstance = new aiplatform.PredictionServiceClient(clientOptions);
+  }
+  return predictionServiceClientInstance;
+}
+
+export async function generateTextEmbedding(text: string): Promise<number[]> {
+  try {
+    const location = process.env.GCP_LOCATION || 'us-central1';
+    const predictionServiceClient = getPredictionServiceClient();
 
     const endpoint = `projects/${projectId}/locations/${location}/publishers/google/models/text-embedding-004`;
     const instance = {
@@ -203,11 +213,54 @@ async function executeSpannerHybridSearch(
 
     // Collect all candidate product IDs
     const candidateIds = Array.from(new Set([...bm25Ranks.keys(), ...vectorRanks.keys()]));
+    const limit = options.limit || 20;
+    const offset = options.offset || 0;
 
-    // Compute RRF Scores & Fetch Full Product Objects
+    if (candidateIds.length === 0) {
+      return {
+        query: queryText,
+        total_matches: 0,
+        limit,
+        offset,
+        products: []
+      };
+    }
+
+    // Batch query candidate products with IN UNNEST(@product_ids)
+    const pSql = `SELECT * FROM Products WHERE product_id IN UNNEST(@product_ids) AND is_active = true`;
+    const pRows = await executeSpannerSql<Product>({ sql: pSql, params: { product_ids: candidateIds } });
+
+    if (!pRows) return null;
+
+    // Batch query specifications for candidate products with IN UNNEST(@product_ids)
+    const specsSql = `SELECT product_id, spec_key, spec_value_en, spec_value_zh, is_filter_facet FROM ProductSpecifications WHERE product_id IN UNNEST(@product_ids)`;
+    const specRows = await executeSpannerSql<ProductSpecification>({ sql: specsSql, params: { product_ids: candidateIds } });
+
+    const specsMap = new Map<string, ProductSpecification[]>();
+    if (specRows) {
+      for (const spec of specRows) {
+        const list = specsMap.get(spec.product_id) || [];
+        list.push(spec);
+        specsMap.set(spec.product_id, list);
+      }
+    }
+
+    const productMap = new Map<string, Product>();
+    for (const p of pRows) {
+      productMap.set(p.product_id, {
+        ...p,
+        price_hkd: Number(p.price_hkd),
+        specifications: specsMap.get(p.product_id) || []
+      });
+    }
+
+    // Compute RRF Scores & Filter Candidates
     const scoredProducts: { product: Product; rrf_score: number; bm25_rank: number; vector_rank: number }[] = [];
 
     for (const pid of candidateIds) {
+      const product = productMap.get(pid);
+      if (!product) continue;
+
       const bm25Rank = bm25Ranks.get(pid);
       const vectorRank = vectorRanks.get(pid);
 
@@ -215,31 +268,23 @@ async function executeSpannerHybridSearch(
       const vectorScoreTerm = vectorRank ? WEIGHT_VECTOR / (K_RRF + vectorRank) : 0;
       const rrfScore = bm25ScoreTerm + vectorScoreTerm;
 
-      // Fetch product details
-      const pSql = `SELECT * FROM Products WHERE product_id = @product_id AND is_active = true`;
-      const pRows = await executeSpannerSql<Product>({ sql: pSql, params: { product_id: pid } });
-      if (pRows && pRows.length > 0) {
-        const product = pRows[0];
-        // Apply Filters
-        if (options.category && product.category_id.toLowerCase() !== options.category.toLowerCase()) continue;
-        if (options.min_price !== undefined && product.price_hkd < options.min_price) continue;
-        if (options.max_price !== undefined && product.price_hkd > options.max_price) continue;
-        if (options.brand && !product.brand.toLowerCase().includes(options.brand.toLowerCase())) continue;
+      // Apply Filters
+      if (options.category && product.category_id.toLowerCase() !== options.category.toLowerCase()) continue;
+      if (options.min_price !== undefined && product.price_hkd < options.min_price) continue;
+      if (options.max_price !== undefined && product.price_hkd > options.max_price) continue;
+      if (options.brand && !product.brand.toLowerCase().includes(options.brand.toLowerCase())) continue;
 
-        scoredProducts.push({
-          product,
-          rrf_score: rrfScore,
-          bm25_rank: bm25Rank || 999,
-          vector_rank: vectorRank || 999,
-        });
-      }
+      scoredProducts.push({
+        product,
+        rrf_score: rrfScore,
+        bm25_rank: bm25Rank || 999,
+        vector_rank: vectorRank || 999,
+      });
     }
 
     // Sort descending by RRF score
     scoredProducts.sort((a, b) => b.rrf_score - a.rrf_score);
 
-    const limit = options.limit || 20;
-    const offset = options.offset || 0;
     const paginated = scoredProducts.slice(offset, offset + limit).map(item => ({
       ...localizeProduct(item.product, options.lang),
       rrf_score: Number(item.rrf_score.toFixed(6)),

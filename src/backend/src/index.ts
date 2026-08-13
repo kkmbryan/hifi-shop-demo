@@ -9,6 +9,7 @@ import {
   handleSynergyCheck,
   handleHealthCheck
 } from './controllers/apiController';
+import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
 
@@ -50,13 +51,7 @@ app.use((_req: Request, res: Response) => {
 });
 
 // Global Error Handler
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('[Unhandled Internal Error]', err);
-  res.status(500).json({
-    status: 'error',
-    message: err.message || 'Internal Server Error'
-  });
-});
+app.use(errorHandler);
 
 // Start Express Server
 if (process.env.NODE_ENV !== 'test') {

@@ -5,6 +5,24 @@ import { evaluateSynergy } from '../services/synergyService';
 import { checkSpannerStatus } from '../config/spanner';
 
 /**
+ * Helper to safely parse numeric query parameters (e.g. min_price, max_price, limit, offset).
+ * Prevents NaN issues by returning defaultValue or undefined if parsing fails.
+ */
+export function parseNumericParam(value: unknown): number | undefined;
+export function parseNumericParam(value: unknown, defaultValue: number): number;
+export function parseNumericParam(value: unknown, defaultValue?: number): number | undefined {
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
+  }
+  const strVal = Array.isArray(value) ? String(value[0]) : String(value);
+  const parsed = Number(strVal);
+  if (Number.isNaN(parsed)) {
+    return defaultValue;
+  }
+  return parsed;
+}
+
+/**
  * GET /api/v1/categories
  * Taxonomy category listing with localization support ('en-US' or 'zh-HK').
  */
@@ -30,11 +48,11 @@ export async function handleGetProducts(req: Request, res: Response, next: NextF
     const lang = (req.query.lang as string) || (req.query.locale as string) || 'en-US';
     const category_id = req.query.category_id as string || req.query.category as string;
     const brand = req.query.brand as string;
-    const min_price = req.query.min_price ? parseFloat(req.query.min_price as string) : undefined;
-    const max_price = req.query.max_price ? parseFloat(req.query.max_price as string) : undefined;
+    const min_price = parseNumericParam(req.query.min_price);
+    const max_price = parseNumericParam(req.query.max_price);
     const output_ports = req.query.output_ports as string;
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
-    const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+    const limit = parseNumericParam(req.query.limit, 20);
+    const offset = parseNumericParam(req.query.offset, 0);
 
     const result = await getProducts({
       category_id,
@@ -110,11 +128,11 @@ export async function handleSearch(req: Request, res: Response, next: NextFuncti
     const q = (req.query.q as string || '').trim();
     const category = req.query.category as string;
     const brand = req.query.brand as string;
-    const min_price = req.query.min_price ? parseFloat(req.query.min_price as string) : undefined;
-    const max_price = req.query.max_price ? parseFloat(req.query.max_price as string) : undefined;
+    const min_price = parseNumericParam(req.query.min_price);
+    const max_price = parseNumericParam(req.query.max_price);
     const lang = (req.query.lang as string) || (req.query.locale as string) || 'en-US';
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
-    const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+    const limit = parseNumericParam(req.query.limit, 20);
+    const offset = parseNumericParam(req.query.offset, 0);
 
     const searchResult = await searchProducts({
       q,

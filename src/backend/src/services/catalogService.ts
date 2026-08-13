@@ -647,17 +647,29 @@ async function querySpannerProducts(options: ProductQueryOptions): Promise<{ pro
   const rows = await executeSpannerSql<Product>({ sql, params });
   if (!rows) return null;
 
-  // Query specs for each product
-  const products: Product[] = [];
-  for (const p of rows) {
-    const specsSql = `SELECT product_id, spec_key, spec_value_en, spec_value_zh, is_filter_facet FROM ProductSpecifications WHERE product_id = @product_id`;
-    const specs = await executeSpannerSql<ProductSpecification>({ sql: specsSql, params: { product_id: p.product_id } });
-    products.push({
-      ...p,
-      price_hkd: Number(p.price_hkd),
-      specifications: specs || []
-    });
+  if (rows.length === 0) {
+    return { products: [], total: 0 };
   }
+
+  // Batch query specifications for products using IN UNNEST(@product_ids)
+  const productIds = rows.map(p => p.product_id);
+  const specsSql = `SELECT product_id, spec_key, spec_value_en, spec_value_zh, is_filter_facet FROM ProductSpecifications WHERE product_id IN UNNEST(@product_ids)`;
+  const specs = await executeSpannerSql<ProductSpecification>({ sql: specsSql, params: { product_ids: productIds } });
+
+  const specsMap = new Map<string, ProductSpecification[]>();
+  if (specs) {
+    for (const spec of specs) {
+      const list = specsMap.get(spec.product_id) || [];
+      list.push(spec);
+      specsMap.set(spec.product_id, list);
+    }
+  }
+
+  const products: Product[] = rows.map(p => ({
+    ...p,
+    price_hkd: Number(p.price_hkd),
+    specifications: specsMap.get(p.product_id) || []
+  }));
 
   return {
     products,
