@@ -27,3 +27,4 @@ dist/
 build/
 .next/
 out/
+skills-lock.json
