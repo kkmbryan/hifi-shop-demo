@@ -44,10 +44,12 @@ The application is architected around the **Google Cloud Well-Architected Framew
 
 ## 📁 Documentation Index
 
-Detailed project requirements and architecture decision records are available in the [`docs/`](docs/) directory:
+Detailed project requirements, architecture decision records, database schemas, and quality audits are available in the [`docs/`](docs/) directory:
 
-- 📋 [**Business Requirements Document (BRD)**](docs/hifi_shop_business_requirements.md) — Comprehensive executive summary, user personas, HK Hi-Fi domain glossary, 32 seed product taxonomy, and Given/When/Then acceptance criteria.
-- 📐 [**Solution Architecture Overview**](docs/hifi_shop_solution_architecture.md) — Full GCP architectural specification, 5 WAF pillars, 2-column ADR tables (ADR-001 to ADR-004), Mermaid component topology, sequence diagrams, and NFR latency SLAs.
+- 📋 [**Business Requirements Document (BRD)**](docs/hifi_shop_business_requirements.md) — Executive summary, user personas, HK Hi-Fi domain glossary, 32 seed product taxonomy, and Given/When/Then acceptance criteria.
+- 📐 [**Solution Architecture Overview**](docs/hifi_shop_solution_architecture.md) — GCP architectural specification, 5 WAF pillars, 2-column ADR tables (ADR-001 to ADR-004), Mermaid component topology, sequence diagrams, and NFR latency SLAs.
+- 🗄️ [**Database Schema Specification**](docs/hifi_shop_database_schema.md) — Cloud Spanner GoogleSQL DDL, interleaving strategy, BM25 N-gram indexes, 768-dim vector cosine distance indexes, and ER diagram.
+- 🔍 [**Code Review & Quality Audit Report**](docs/hifi_shop_code_review_report.md) — Code quality audit report evaluating type safety, maintainability, performance optimizations, and test coverage.
 
 ---
 
@@ -59,7 +61,19 @@ hifi-shop-demo/
 │   ├── assets/
 │   │   └── hifi_architecture_diagram.jpg   # GCP System Architecture Diagram
 │   ├── hifi_shop_business_requirements.md  # Business Requirements Document (BRD)
-│   └── hifi_shop_solution_architecture.md # Solution Architecture Overview & ADRs
+│   ├── hifi_shop_solution_architecture.md # Solution Architecture Overview & ADRs
+│   ├── hifi_shop_database_schema.md        # Cloud Spanner Schema & Index Specs
+│   └── hifi_shop_code_review_report.md     # Code Quality & Maintainability Audit
+├── scripts/                               # Image generation & bucket setup scripts
+├── sql/                                   # Cloud Spanner DDL & DML seed scripts
+│   ├── 01_create_tables.sql
+│   ├── 02_create_indexes.sql
+│   └── 03_seed_data.sql
+├── src/                                   # Application codebase
+│   ├── backend/                           # Node.js/TypeScript REST API (Cloud Run)
+│   └── frontend/                          # Next.js/React SSR Web UI (Cloud Run)
+├── terraform/                             # Terraform IaC manifests for GCP GCS
+├── tests/                                 # Automated Jest & RTL unit/integration tests
 ├── .gitignore                             # Git ignore rules
 └── README.md                              # Project documentation entry point
 ```
