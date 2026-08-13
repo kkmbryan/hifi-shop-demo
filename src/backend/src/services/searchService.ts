@@ -155,7 +155,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
   try {
     // 1. BM25 Search Query against Cloud Spanner
     const bm25Sql = `
-      SELECT product_id, name_en, name_zh, brand, price_hkd
+      SELECT product_id, name_en, name_zh, brand, CAST(price_hkd AS FLOAT64) AS price_hkd
       FROM Products
       WHERE SEARCH(Products, @query) AND is_active = true
       LIMIT 50
@@ -213,7 +213,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
     }
 
     // Batch query candidate products with IN UNNEST(@product_ids)
-    const pSql = `SELECT product_id, category_id, brand, model, name_en, name_zh, price_hkd, description_en, description_zh, acoustic_signature_en, acoustic_signature_zh, image_url, is_active FROM Products WHERE product_id IN UNNEST(@product_ids) AND is_active = true`;
+    const pSql = `SELECT product_id, category_id, brand, model, name_en, name_zh, CAST(price_hkd AS FLOAT64) AS price_hkd, description_en, description_zh, acoustic_signature_en, acoustic_signature_zh, image_url, is_active FROM Products WHERE product_id IN UNNEST(@product_ids) AND is_active = true`;
     const pRows = await executeSpannerSql<Product>({ sql: pSql, params: { product_ids: candidateIds } });
 
     if (pRows === null) {

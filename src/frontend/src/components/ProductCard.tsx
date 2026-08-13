@@ -2,12 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Product } from '../data/products';
 import { useLocale } from '../context/LocaleContext';
 import { useCart } from '../context/CartContext';
-import { ShoppingBag, Check, Disc, Volume2 } from 'lucide-react';
+import { ShoppingBag, Check, Disc, Volume2, Zap, Wifi, CircleDot, Headphones, Cable, ShieldCheck } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
   onSelectProduct?: (product: Product) => void;
 }
+
+
+const getCategoryIcon = (categoryId?: string) => {
+  const cat = (categoryId || '').toLowerCase();
+  if (cat.includes('dac')) return Disc;
+  if (cat.includes('amp') || cat.includes('tube')) return Zap;
+  if (cat.includes('stream')) return Wifi;
+  if (cat.includes('turntable')) return CircleDot;
+  if (cat.includes('head')) return Headphones;
+  if (cat.includes('loudspeaker') || cat.includes('speaker')) return Volume2;
+  if (cat.includes('cable')) return Cable;
+  if (cat.includes('power')) return ShieldCheck;
+  return Disc;
+};
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProduct }) => {
   const { locale, t } = useLocale();
@@ -23,6 +37,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
 
   const hasValidImageUrl = Boolean(product.imageUrl && product.imageUrl.trim().length > 0);
   const showFallback = !hasValidImageUrl || imgError;
+  const CategoryIcon = getCategoryIcon(product.categoryId || product.category_id);
 
   const isInCart = cart.some((item) => item.product.id === product.id);
 
@@ -38,7 +53,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
           <>
             {!imgLoaded && (
               <div className="absolute inset-0 bg-slate-900 animate-pulse flex items-center justify-center text-slate-700">
-                <Disc className="w-8 h-8 animate-spin" />
+                <CategoryIcon className="w-8 h-8 animate-spin text-slate-600" />
               </div>
             )}
             <img
@@ -59,7 +74,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
             className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-500 select-none"
           >
             <div className="p-3 rounded-full bg-slate-900/80 border border-slate-800 text-amber-500/80 mb-2 shadow-inner">
-              <Disc className="w-8 h-8 text-slate-600" />
+              <CategoryIcon className="w-8 h-8 text-amber-500/80" />
             </div>
             <span className="text-xs font-mono font-bold text-amber-500/80 tracking-wide">{product.brand}</span>
             <span className="text-xs text-slate-400 text-center font-sans mt-0.5 line-clamp-1 max-w-[90%]">{product.model}</span>

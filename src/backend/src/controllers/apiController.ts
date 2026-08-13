@@ -28,6 +28,8 @@ export function parseNumericParam(value: unknown, defaultValue?: number): number
  */
 export async function handleGetCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
     const lang = (req.query.lang as string) || (req.query.locale as string) || 'en-US';
     const categories = await getCategories(lang);
     res.status(200).json({
@@ -45,6 +47,8 @@ export async function handleGetCategories(req: Request, res: Response, next: Nex
  */
 export async function handleGetProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
     const lang = (req.query.lang as string) || (req.query.locale as string) || 'en-US';
     const category_id = req.query.category_id as string || req.query.category as string;
     const brand = req.query.brand as string;
@@ -90,6 +94,8 @@ export async function handleGetProducts(req: Request, res: Response, next: NextF
  */
 export async function handleGetProductById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
     const productId = req.params.id;
     const lang = (req.query.lang as string) || (req.query.locale as string) || 'en-US';
 
@@ -125,6 +131,8 @@ export async function handleGetProductById(req: Request, res: Response, next: Ne
  */
 export async function handleSearch(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
     const q = (req.query.q as string || '').trim();
     const category = req.query.category as string;
     const brand = req.query.brand as string;
@@ -160,6 +168,8 @@ export async function handleSearch(req: Request, res: Response, next: NextFuncti
  */
 export async function handleSynergyCheck(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
     const body = req.body || {};
     const product_ids = body.product_ids || body.cart_items;
     const lang = body.lang || (req.query.lang as string) || 'en-US';
@@ -192,6 +202,8 @@ export async function handleSynergyCheck(req: Request, res: Response, next: Next
  * Microservice health check endpoint.
  */
 export async function handleHealthCheck(_req: Request, res: Response): Promise<void> {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
   const spannerStatus = checkSpannerStatus();
   res.status(200).json({
     status: 'ok',

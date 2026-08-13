@@ -195,7 +195,7 @@ export async function getProducts(options: ProductQueryOptions = {}): Promise<{
   const total = countRows.length > 0 ? Number(countRows[0].count) : 0;
 
   const sql = `
-    SELECT product_id, category_id, brand, model, name_en, name_zh, price_hkd,
+    SELECT product_id, category_id, brand, model, name_en, name_zh, CAST(price_hkd AS FLOAT64) AS price_hkd,
            description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
            image_url, is_active
     FROM Products
@@ -270,7 +270,7 @@ export async function getProducts(options: ProductQueryOptions = {}): Promise<{
  * Get product by ID strictly from Cloud Spanner with full specs.
  */
 export async function getProductById(productId: string, lang?: string): Promise<Product | null> {
-  const sql = `SELECT product_id, category_id, brand, model, name_en, name_zh, price_hkd, description_en, description_zh, acoustic_signature_en, acoustic_signature_zh, image_url, is_active FROM Products WHERE product_id = @product_id AND is_active = true`;
+  const sql = `SELECT product_id, category_id, brand, model, name_en, name_zh, CAST(price_hkd AS FLOAT64) AS price_hkd, description_en, description_zh, acoustic_signature_en, acoustic_signature_zh, image_url, is_active FROM Products WHERE product_id = @product_id AND is_active = true`;
   const rows = await executeSpannerSql<Product>({ sql, params: { product_id: productId } });
 
   if (rows === null) {

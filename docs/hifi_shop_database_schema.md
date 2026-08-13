@@ -322,3 +322,25 @@ The SQL deliverables must be executed sequentially in Cloud Spanner using standa
 1. **`sql/01_create_tables.sql`**: Provisions `Categories`, `Products`, `ProductSpecifications`, and `ProductEmbeddings`.
 2. **`sql/02_create_indexes.sql`**: Creates secondary composite indexes, BM25 N-gram search index, and 768-dim vector cosine index.
 3. **`sql/03_seed_data.sql`**: Inserts 8 core categories, 32 flagship Hi-Fi seed products, 150+ hardware specifications, and 32 pre-computed 768-dim vector embeddings.
+
+---
+
+## 6.4 Numeric Data Type Projection & Node.js Serialization Strategy
+
+### Rationale & Problem Statement
+Cloud Spanner stores `price_hkd` as a fixed-precision `NUMERIC` data type to guarantee exact monetary precision without floating-point rounding errors. However, the `@google-cloud/spanner` Node.js client library returns `NUMERIC` columns as custom `SpannerNumeric` objects (`{ value: "39800.00" }`). When serializing responses with `row.toJSON()`, default JSON stringification converts numeric objects to `null` or unparsed strings, resulting in `$0` or `NaN` price displays in client web applications.
+
+### Solution Standard
+All SQL queries in backend services (`catalogService.ts` and `searchService.ts`) MUST project pricing columns using `CAST(price_hkd AS FLOAT64) AS price_hkd`:
+
+```sql
+SELECT product_id, category_id, brand, model, name_en, name_zh,
+       CAST(price_hkd AS FLOAT64) AS price_hkd,
+       description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
+       image_url, is_active
+FROM Products
+WHERE is_active = true
+ORDER BY price_hkd ASC;
+```
+
+This forces Cloud Spanner's query engine to convert fixed-precision numerics into standard IEEE 754 64-bit floating-point numbers directly at the database level, ensuring seamless JSON serialization and instant numeric evaluation in microservices.

@@ -105,11 +105,17 @@ const DEFAULT_CATEGORY_ICONS: Record<string, string> = {
  */
 export function adaptCategory(raw: any): Category {
   const id = raw.id || raw.category_id || '';
-  const price =
-    parseSpannerNumeric(raw.priceHkd) ||
-    parseSpannerNumeric(raw.price_hkd) ||
-    parseSpannerNumeric(raw.price) ||
-    0;
+  const rawPriceHkd = raw.price_hkd ?? raw.priceHkd ?? raw.price ?? raw.price_HKD ?? raw.unit_price;
+  let parsedPrice = parseSpannerNumeric(rawPriceHkd);
+
+  if (!parsedPrice || isNaN(parsedPrice) || parsedPrice <= 0) {
+    const directFallback = Number(raw.price_hkd || raw.priceHkd || raw.price || 0);
+    if (!isNaN(directFallback) && directFallback > 0) {
+      parsedPrice = directFallback;
+    }
+  }
+
+  const price = isNaN(parsedPrice) || parsedPrice < 0 ? 0 : parsedPrice;
 
   return {
     id,
@@ -240,11 +246,17 @@ export function adaptProduct(raw: any): Product {
     }
   }
 
-  const price =
-    parseSpannerNumeric(raw.priceHkd) ||
-    parseSpannerNumeric(raw.price_hkd) ||
-    parseSpannerNumeric(raw.price) ||
-    0;
+  const rawPriceHkd = raw.price_hkd ?? raw.priceHkd ?? raw.price ?? raw.price_HKD ?? raw.unit_price;
+  let parsedPrice = parseSpannerNumeric(rawPriceHkd);
+
+  if (!parsedPrice || isNaN(parsedPrice) || parsedPrice <= 0) {
+    const directFallback = Number(raw.price_hkd || raw.priceHkd || raw.price || 0);
+    if (!isNaN(directFallback) && directFallback > 0) {
+      parsedPrice = directFallback;
+    }
+  }
+
+  const price = isNaN(parsedPrice) || parsedPrice < 0 ? 0 : parsedPrice;
 
   return {
     id,
