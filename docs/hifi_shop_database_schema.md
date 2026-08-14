@@ -223,9 +223,9 @@ search_tokens TOKENLIST AS (TOKENLIST_CONCAT([
   TOKENIZE_FULLTEXT(description_zh, language_tag=>'zh'),
   TOKENIZE_FULLTEXT(acoustic_signature_zh, language_tag=>'zh'),
 
-  -- Substring Tokenization for Alphanumeric Brand & Model Partial Matching (e.g. "800", "TT2", "D90")
-  TOKENIZE_SUBSTRING(brand, min_ngram_size=>2, max_ngram_size=>10),
-  TOKENIZE_SUBSTRING(model, min_ngram_size=>2, max_ngram_size=>10)
+  -- Brand & Model Full-Text Tokenization
+  TOKENIZE_FULLTEXT(brand, language_tag=>'en'),
+  TOKENIZE_FULLTEXT(model, language_tag=>'en')
 ])) HIDDEN
 
 -- Full-Text Search Index on Products table:
