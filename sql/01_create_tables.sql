@@ -34,6 +34,10 @@ CREATE TABLE Categories (
 CREATE TABLE Products (
   product_id STRING(64) NOT NULL,
   category_id STRING(64) NOT NULL,
+  category_name_en STRING(255) NOT NULL,
+  category_name_zh STRING(255) NOT NULL,
+  category_description_en STRING(MAX),
+  category_description_zh STRING(MAX),
   brand STRING(128) NOT NULL,
   model STRING(128) NOT NULL,
   name_en STRING(255) NOT NULL,
@@ -45,7 +49,25 @@ CREATE TABLE Products (
   acoustic_signature_zh STRING(MAX),
   image_url STRING(1024),
   is_active BOOL NOT NULL DEFAULT (true),
-  search_tokens TOKENLIST AS (TOKENLIST_CONCAT([TOKENIZE_FULLTEXT(name_en), TOKENIZE_FULLTEXT(brand), TOKENIZE_FULLTEXT(model), TOKENIZE_FULLTEXT(category_id), TOKENIZE_FULLTEXT(description_en)])) HIDDEN,
+  search_tokens TOKENLIST AS (TOKENLIST_CONCAT([
+    -- English Full-Text Segmentation (language_tag => 'en')
+    TOKENIZE_FULLTEXT(name_en, language_tag=>'en'),
+    TOKENIZE_FULLTEXT(category_name_en, language_tag=>'en'),
+    TOKENIZE_FULLTEXT(category_description_en, language_tag=>'en'),
+    TOKENIZE_FULLTEXT(description_en, language_tag=>'en'),
+    TOKENIZE_FULLTEXT(acoustic_signature_en, language_tag=>'en'),
+
+    -- Traditional Chinese Full-Text Segmentation (language_tag => 'zh')
+    TOKENIZE_FULLTEXT(name_zh, language_tag=>'zh'),
+    TOKENIZE_FULLTEXT(category_name_zh, language_tag=>'zh'),
+    TOKENIZE_FULLTEXT(category_description_zh, language_tag=>'zh'),
+    TOKENIZE_FULLTEXT(description_zh, language_tag=>'zh'),
+    TOKENIZE_FULLTEXT(acoustic_signature_zh, language_tag=>'zh'),
+
+    -- Substring Tokenization for Alphanumeric Brand & Model Partial Matching (e.g. "800", "TT2", "D90")
+    TOKENIZE_SUBSTRING(brand, min_ngram_size=>2, max_ngram_size=>10),
+    TOKENIZE_SUBSTRING(model, min_ngram_size=>2, max_ngram_size=>10)
+  ])) HIDDEN,
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
   updated_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
   CONSTRAINT FK_Products_Categories FOREIGN KEY (category_id) REFERENCES Categories (category_id)

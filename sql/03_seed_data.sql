@@ -112,12 +112,18 @@ INSERT OR UPDATE INTO Categories (category_id, name_en, name_zh, slug, descripti
 -- 2. Insert Products Master (32 Flagship Audiophile Products)
 -- -----------------------------------------------------------------------------
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-chord-hugo-tt2',
   'dacs',
+  'DACs (Digital-to-Analog Converters)',
+  '解碼器 (DACs)',
+  'High-resolution Digital-to-Analog Converters converting PCM and DSD streams into pure analog sound.',
+  '高解析度數碼至模擬解碼器，將 PCM 與 DSD 數位訊號完美轉換為純淨類比音訊。',
   'Chord Electronics',
   'Hugo TT 2',
   'Chord Hugo TT 2 Desktop DAC / Headphone Amplifier',
@@ -134,12 +140,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-denafrips-venus-ii',
   'dacs',
+  'DACs (Digital-to-Analog Converters)',
+  '解碼器 (DACs)',
+  'High-resolution Digital-to-Analog Converters converting PCM and DSD streams into pure analog sound.',
+  '高解析度數碼至模擬解碼器，將 PCM 與 DSD 數位訊號完美轉換為純淨類比音訊。',
   'Denafrips',
   'Venus II 12th',
   'Denafrips Venus II 12th Anniversary R-2R Ladder DAC',
@@ -156,12 +168,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-topping-d90-iii',
   'dacs',
+  'DACs (Digital-to-Analog Converters)',
+  '解碼器 (DACs)',
+  'High-resolution Digital-to-Analog Converters converting PCM and DSD streams into pure analog sound.',
+  '高解析度數碼至模擬解碼器，將 PCM 與 DSD 數位訊號完美轉換為純淨類比音訊。',
   'Topping',
   'D90 III SABRE',
   'Topping D90 III SABRE Fully Balanced Flagship DAC',
@@ -178,12 +196,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-ifi-neo-idosd-2',
   'dacs',
+  'DACs (Digital-to-Analog Converters)',
+  '解碼器 (DACs)',
+  'High-resolution Digital-to-Analog Converters converting PCM and DSD streams into pure analog sound.',
+  '高解析度數碼至模擬解碼器，將 PCM 與 DSD 數位訊號完美轉換為純淨類比音訊。',
   'iFi Audio',
   'NEO iDSD 2',
   'iFi Audio NEO iDSD 2 Lossless Bluetooth & Headphone DAC/Amp',
@@ -200,12 +224,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-mcintosh-ma8950',
   'amplifiers',
+  'Amplifiers',
+  '擴音機 (Amplifiers)',
+  'Integrated, pre-amplifiers, power amplifiers, and vacuum tube amplifiers delivering pristine audio power.',
+  '合併式、前級、後級及真空管擴音機，提供純正無瑕的音訊擴大驅動力。',
   'Mcintosh',
   'MA8950',
   'McIntosh MA8950 Integrated Amplifier (200W/Ch)',
@@ -222,12 +252,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-accuphase-e380',
   'amplifiers',
+  'Amplifiers',
+  '擴音機 (Amplifiers)',
+  'Integrated, pre-amplifiers, power amplifiers, and vacuum tube amplifiers delivering pristine audio power.',
+  '合併式、前級、後級及真空管擴音機，提供純正無瑕的音訊擴大驅動力。',
   'Accuphase',
   'E-380',
   'Accuphase E-380 Stereo Integrated Amplifier',
@@ -244,12 +280,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-feliks-envy',
   'amplifiers',
+  'Amplifiers',
+  '擴音機 (Amplifiers)',
+  'Integrated, pre-amplifiers, power amplifiers, and vacuum tube amplifiers delivering pristine audio power.',
+  '合併式、前級、後級及真空管擴音機，提供純正無瑕的音訊擴大驅動力。',
   'Feliks Audio',
   'Envy',
   'Feliks Audio Envy Flagship 300B Vacuum Tube Headphone Amp',
@@ -266,12 +308,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-rega-elex-mk4',
   'amplifiers',
+  'Amplifiers',
+  '擴音機 (Amplifiers)',
+  'Integrated, pre-amplifiers, power amplifiers, and vacuum tube amplifiers delivering pristine audio power.',
+  '合併式、前級、後級及真空管擴音機，提供純正無瑕的音訊擴大驅動力。',
   'Rega',
   'Elex MK4',
   'Rega Elex MK4 Integrated Stereo Amplifier with DAC',
@@ -288,12 +336,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-aurender-n200',
   'streamers',
+  'Network Streamers',
+  '網絡播放器 (Streamers)',
+  'High-fidelity digital transports and network music streamers with ultra-low jitter.',
+  '高保真網絡音樂播放器與數位轉盤，具備極低時基誤差與高清串流能力。',
   'Aurender',
   'N200',
   'Aurender N200 High-Performance Caching Music Server & Transport',
@@ -310,12 +364,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-lumin-t3',
   'streamers',
+  'Network Streamers',
+  '網絡播放器 (Streamers)',
+  'High-fidelity digital transports and network music streamers with ultra-low jitter.',
+  '高保真網絡音樂播放器與數位轉盤，具備極低時基誤差與高清串流能力。',
   'Lumin',
   'T3',
   'Lumin T3 Digital Music Player with Internal Dual SABRE DAC',
@@ -332,12 +392,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-eversolo-dmp-a8',
   'streamers',
+  'Network Streamers',
+  '網絡播放器 (Streamers)',
+  'High-fidelity digital transports and network music streamers with ultra-low jitter.',
+  '高保真網絡音樂播放器與數位轉盤，具備極低時基誤差與高清串流能力。',
   'Eversolo',
   'DMP-A8',
   'Eversolo DMP-A8 Network Streamer, DAC & Preamp',
@@ -354,12 +420,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-wiim-pro-plus',
   'streamers',
+  'Network Streamers',
+  '網絡播放器 (Streamers)',
+  'High-fidelity digital transports and network music streamers with ultra-low jitter.',
+  '高保真網絡音樂播放器與數位轉盤，具備極低時基誤差與高清串流能力。',
   'WiiM',
   'Pro Plus',
   'WiiM Pro Plus High-Res Audio Streamer with Premium AKM DAC',
@@ -376,12 +448,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-linn-sondek-lp12',
   'turntables',
+  'Turntables',
+  '黑膠唱機 (Turntables)',
+  'Precision analog vinyl disc record players, tonearms, and moving magnet/moving coil cartridges.',
+  '精密類比黑膠唱片機、唱臂及動磁/動圈唱頭，還原最真實的黑膠韻味。',
   'Linn',
   'Sondek LP12 Majik',
   'Linn Sondek LP12 Majik Precision Turntable Package',
@@ -398,12 +476,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-technics-sl1200g',
   'turntables',
+  'Turntables',
+  '黑膠唱機 (Turntables)',
+  'Precision analog vinyl disc record players, tonearms, and moving magnet/moving coil cartridges.',
+  '精密類比黑膠唱片機、唱臂及動磁/動圈唱頭，還原最真實的黑膠韻味。',
   'Technics',
   'SL-1200G',
   'Technics SL-1200G Grand Class Direct Drive Turntable',
@@ -420,12 +504,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-rega-planar-6',
   'turntables',
+  'Turntables',
+  '黑膠唱機 (Turntables)',
+  'Precision analog vinyl disc record players, tonearms, and moving magnet/moving coil cartridges.',
+  '精密類比黑膠唱片機、唱臂及動磁/動圈唱頭，還原最真實的黑膠韻味。',
   'Rega',
   'Planar 6',
   'Rega Planar 6 Turntable with Neo PSU & Ania MC Cartridge',
@@ -442,12 +532,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-project-debut-pro',
   'turntables',
+  'Turntables',
+  '黑膠唱機 (Turntables)',
+  'Precision analog vinyl disc record players, tonearms, and moving magnet/moving coil cartridges.',
+  '精密類比黑膠唱片機、唱臂及動磁/動圈唱頭，還原最真實的黑膠韻味。',
   'Pro-Ject',
   'Debut PRO',
   'Pro-Ject Debut PRO Audiophile Manual Turntable',
@@ -464,12 +560,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-sennheiser-hd800s',
   'head-fi',
+  'Headphones / Head-Fi',
+  '耳機 / 入耳式耳機 (Head-Fi)',
+  'Flagship open-back dynamic, planar magnetic, electrostatic headphones, and custom IEMs.',
+  '旗艦級開放式動圈、平板振膜、靜電耳機及專業入耳式監聽耳機。',
   'Sennheiser',
   'HD 800 S',
   'Sennheiser HD 800 S Open-Back Dynamic Flagship Headphones',
@@ -486,12 +588,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-focal-utopia-2022',
   'head-fi',
+  'Headphones / Head-Fi',
+  '耳機 / 入耳式耳機 (Head-Fi)',
+  'Flagship open-back dynamic, planar magnetic, electrostatic headphones, and custom IEMs.',
+  '旗艦級開放式動圈、平板振膜、靜電耳機及專業入耳式監聽耳機。',
   'Focal',
   'Utopia (2022)',
   'Focal Utopia (2022 Edition) Beryllium Open-Back Headphones',
@@ -508,12 +616,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-vision-ears-ext',
   'head-fi',
+  'Headphones / Head-Fi',
+  '耳機 / 入耳式耳機 (Head-Fi)',
+  'Flagship open-back dynamic, planar magnetic, electrostatic headphones, and custom IEMs.',
+  '旗艦級開放式動圈、平板振膜、靜電耳機及專業入耳式監聽耳機。',
   'Vision Ears',
   'EXT',
   'Vision Ears EXT Universal Hybrid In-Ear Monitors',
@@ -530,12 +644,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-campfire-andromeda-2020',
   'head-fi',
+  'Headphones / Head-Fi',
+  '耳機 / 入耳式耳機 (Head-Fi)',
+  'Flagship open-back dynamic, planar magnetic, electrostatic headphones, and custom IEMs.',
+  '旗艦級開放式動圈、平板振膜、靜電耳機及專業入耳式監聽耳機。',
   'Campfire Audio',
   'Andromeda 2020',
   'Campfire Audio Andromeda 2020 5-BA In-Ear Monitors',
@@ -552,12 +672,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-bw-804-d4',
   'loudspeakers',
+  'Loudspeakers',
+  '音箱 / 喇叭 (Loudspeakers)',
+  'High-end stereo floorstanding, bookshelf, and active studio monitor loudspeakers.',
+  '高級立體聲落地式音箱、書架式喇叭及主動式專業監聽音箱。',
   'Bowers & Wilkins',
   '804 D4',
   'Bowers & Wilkins 804 D4 Diamond Tweeter Floorstanding Loudspeakers',
@@ -574,12 +700,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-kef-ls50-wireless-ii',
   'loudspeakers',
+  'Loudspeakers',
+  '音箱 / 喇叭 (Loudspeakers)',
+  'High-end stereo floorstanding, bookshelf, and active studio monitor loudspeakers.',
+  '高級立體聲落地式音箱、書架式喇叭及主動式專業監聽音箱。',
   'KEF',
   'LS50 Wireless II',
   'KEF LS50 Wireless II Active All-in-One Stereo Loudspeakers',
@@ -596,12 +728,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-harbeth-m302-xd',
   'loudspeakers',
+  'Loudspeakers',
+  '音箱 / 喇叭 (Loudspeakers)',
+  'High-end stereo floorstanding, bookshelf, and active studio monitor loudspeakers.',
+  '高級立體聲落地式音箱、書架式喇叭及主動式專業監聽音箱。',
   'Harbeth',
   'Monitor 30.2 XD',
   'Harbeth Monitor 30.2 XD Standmount Loudspeakers',
@@ -618,12 +756,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-genelec-8341a',
   'loudspeakers',
+  'Loudspeakers',
+  '音箱 / 喇叭 (Loudspeakers)',
+  'High-end stereo floorstanding, bookshelf, and active studio monitor loudspeakers.',
+  '高級立體聲落地式音箱、書架式喇叭及主動式專業監聽音箱。',
   'Genelec',
   '8341A SAM',
   'Genelec 8341A SAM Coaxial Active Studio Monitor (The Ones)',
@@ -640,12 +784,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-nordost-frey-2',
   'cables',
+  'Audio Cables',
+  '線材 (Cables)',
+  'Audiophile-grade speaker cables, balanced XLR/RCA interconnects, USB data cables, and power cords.',
+  '發燒級喇叭線、平衡 XLR/RCA 訊號線、高傳真 USB 數據線及大電流電源線。',
   'Nordost',
   'Frey 2',
   'Nordost Frey 2 High-End Speaker Cables (2.5m Pair, Banana/Spade)',
@@ -662,12 +812,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-audioquest-dragon-tail',
   'cables',
+  'Audio Cables',
+  '線材 (Cables)',
+  'Audiophile-grade speaker cables, balanced XLR/RCA interconnects, USB data cables, and power cords.',
+  '發燒級喇叭線、平衡 XLR/RCA 訊號線、高傳真 USB 數據線及大電流電源線。',
   'AudioQuest',
   'Dragon Tail XLR',
   'AudioQuest Dragon XLR Balanced Interconnects (1.0m Pair)',
@@ -684,12 +840,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-shunyata-venom-hc',
   'cables',
+  'Audio Cables',
+  '線材 (Cables)',
+  'Audiophile-grade speaker cables, balanced XLR/RCA interconnects, USB data cables, and power cords.',
+  '發燒級喇叭線、平衡 XLR/RCA 訊號線、高傳真 USB 數據線及大電流電源線。',
   'Shunyata Research',
   'Venom HC',
   'Shunyata Research Venom HC High-Current Power Cable (1.75m)',
@@ -706,12 +868,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-inakustik-referenz-usb',
   'cables',
+  'Audio Cables',
+  '線材 (Cables)',
+  'Audiophile-grade speaker cables, balanced XLR/RCA interconnects, USB data cables, and power cords.',
+  '發燒級喇叭線、平衡 XLR/RCA 訊號線、高傳真 USB 數據線及大電流電源線。',
   'Inakustik',
   'Referenz USB 2.0',
   'Inakustik Referenz High-Speed Audio USB Cable (1.5m)',
@@ -728,12 +896,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-audioquest-niagara-5000',
   'power-conditioning',
+  'Power Conditioning',
+  '電源處理 (Power Conditioning)',
+  'Ultra-low noise AC power noise dissipation systems, power regenerators, and linear DC supplies.',
+  '超低雜訊交流電源淨化器、正弦波電源重組再生器及平衡直流線性電源。',
   'AudioQuest',
   'Niagara 5000',
   'AudioQuest Niagara 5000 Low-Z Power Noise Dissipation System',
@@ -750,12 +924,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-isotek-v5-aquarius',
   'power-conditioning',
+  'Power Conditioning',
+  '電源處理 (Power Conditioning)',
+  'Ultra-low noise AC power noise dissipation systems, power regenerators, and linear DC supplies.',
+  '超低雜訊交流電源淨化器、正弦波電源重組再生器及平衡直流線性電源。',
   'IsoTek',
   'V5 Aquarius',
   'IsoTek V5 Aquarius High-End Mains Power Conditioner',
@@ -772,12 +952,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-psaudio-directstream-p12',
   'power-conditioning',
+  'Power Conditioning',
+  '電源處理 (Power Conditioning)',
+  'Ultra-low noise AC power noise dissipation systems, power regenerators, and linear DC supplies.',
+  '超低雜訊交流電源淨化器、正弦波電源重組再生器及平衡直流線性電源。',
   'PS Audio',
   'DirectStream P12',
   'PS Audio DirectStream Power Plant P12 AC Regenerator',
@@ -794,12 +980,18 @@ INSERT OR UPDATE INTO Products (
 );
 
 INSERT OR UPDATE INTO Products (
-  product_id, category_id, brand, model, name_en, name_zh, price_hkd,
-  description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-  image_url, is_active, created_at, updated_at
+  product_id, category_id, category_name_en, category_name_zh,
+  category_description_en, category_description_zh, brand, model,
+  name_en, name_zh, price_hkd, description_en, description_zh,
+  acoustic_signature_en, acoustic_signature_zh, image_url, is_active,
+  created_at, updated_at
 ) VALUES (
   'prod-plixir-elite-bdc',
   'power-conditioning',
+  'Power Conditioning',
+  '電源處理 (Power Conditioning)',
+  'Ultra-low noise AC power noise dissipation systems, power regenerators, and linear DC supplies.',
+  '超低雜訊交流電源淨化器、正弦波電源重組再生器及平衡直流線性電源。',
   'Plixir',
   'Elite BDC',
   'Plixir Elite BDC Balanced DC Power Supply (12V 4A)',

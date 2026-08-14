@@ -11,6 +11,7 @@ export interface HybridSearchOptions {
   lang?: string;
   limit?: number;
   offset?: number;
+  mode?: 'fts' | 'vector' | 'hybrid';
 }
 
 export interface HybridSearchResult {
@@ -134,6 +135,10 @@ async function executeFallbackCatalogSearch(
       p.name_zh,
       p.brand,
       p.model,
+      p.category_name_en,
+      p.category_name_zh,
+      p.category_description_en,
+      p.category_description_zh,
       p.description_en,
       p.description_zh,
       p.acoustic_signature_en,
@@ -172,9 +177,147 @@ async function executeFallbackCatalogSearch(
 }
 
 /**
+ * Execute Pure Full-Text Search (FTS) using Cloud Spanner SEARCH(search_tokens, @query_text) and SCORE ranking.
+ * No embedding generation is performed.
+ */
+export async function searchProductsFtsOnly(options: HybridSearchOptions): Promise<HybridSearchResult> {
+  const startTime = Date.now();
+  const queryText = (options.q || "").trim();
+  const limit = options.limit || 20;
+  const offset = options.offset || 0;
+
+  if (!queryText) {
+    return {
+      query: "",
+      total_matches: 0,
+      execution_time_ms: Date.now() - startTime,
+      limit,
+      offset,
+      products: []
+    };
+  }
+
+  try {
+    const filterParams: Record<string, any> = { query_text: queryText };
+    const filterTypes: Record<string, any> = { query_text: "string" };
+    let ftsFilterSql = "";
+
+    if (options.category) {
+      ftsFilterSql += " AND LOWER(category_id) = LOWER(@category)";
+      filterParams.category = options.category;
+      filterTypes.category = "string";
+    }
+
+    if (options.min_price !== undefined) {
+      ftsFilterSql += " AND price_hkd >= @min_price";
+      filterParams.min_price = options.min_price;
+      filterTypes.min_price = "float64";
+    }
+
+    if (options.max_price !== undefined) {
+      ftsFilterSql += " AND price_hkd <= @max_price";
+      filterParams.max_price = options.max_price;
+      filterTypes.max_price = "float64";
+    }
+
+    if (options.brand) {
+      ftsFilterSql += " AND LOWER(brand) LIKE @brand_pattern";
+      filterParams.brand_pattern = `%${options.brand.toLowerCase()}%`;
+      filterTypes.brand_pattern = "string";
+    }
+
+    const ftsSql = `
+      SELECT product_id, category_id, category_name_en, category_name_zh,
+             category_description_en, category_description_zh, brand, model,
+             name_en, name_zh, CAST(price_hkd AS FLOAT64) AS price_hkd,
+             description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
+             image_url, is_active, SCORE(search_tokens, @query_text) AS score
+      FROM Products@{FORCE_INDEX=idx_products_search}
+      WHERE SEARCH(search_tokens, @query_text) AND is_active = true${ftsFilterSql}
+      ORDER BY SCORE(search_tokens, @query_text) DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    const countSql = `
+      SELECT COUNT(*) AS count
+      FROM Products@{FORCE_INDEX=idx_products_search}
+      WHERE SEARCH(search_tokens, @query_text) AND is_active = true${ftsFilterSql}
+    `;
+
+    const [rows, countRows] = await Promise.all([
+      executeSpannerSql<Product & { score?: number }>({
+        sql: ftsSql,
+        params: filterParams,
+        types: filterTypes
+      }),
+      executeSpannerSql<{ count: number | string }>({
+        sql: countSql,
+        params: filterParams,
+        types: filterTypes
+      })
+    ]);
+
+    if (rows === null) {
+      return await executeFallbackCatalogSearch(options, queryText, startTime);
+    }
+
+    const totalMatches = countRows && countRows.length > 0 ? Number(countRows[0].count) : rows.length;
+
+    if (rows.length === 0) {
+      return {
+        query: queryText,
+        total_matches: 0,
+        execution_time_ms: Date.now() - startTime,
+        limit,
+        offset,
+        products: []
+      };
+    }
+
+    // Batch query specifications for products using IN UNNEST(@product_ids)
+    const productIds = rows.map(p => p.product_id);
+    const specsSql = `SELECT product_id, spec_key, spec_value_en, spec_value_zh, is_filter_facet FROM ProductSpecifications WHERE product_id IN UNNEST(@product_ids)`;
+    const specs = await executeSpannerSql<ProductSpecification>({ sql: specsSql, params: { product_ids: productIds } }) || [];
+
+    const specsMap = new Map<string, ProductSpecification[]>();
+    for (const spec of specs) {
+      const list = specsMap.get(spec.product_id) || [];
+      list.push(spec);
+      specsMap.set(spec.product_id, list);
+    }
+
+    const products: Product[] = rows.map((p, idx) => ({
+      ...p,
+      price_hkd: parseSpannerNumeric(p.price_hkd),
+      image_url: sanitizeImageUrl(p.image_url),
+      specifications: specsMap.get(p.product_id) || [],
+      bm25_rank: offset + idx + 1
+    }));
+
+    const localized = products.map(p => localizeProduct(p, options.lang));
+
+    return {
+      query: queryText,
+      total_matches: totalMatches,
+      execution_time_ms: Date.now() - startTime,
+      limit,
+      offset,
+      products: localized
+    };
+  } catch (error) {
+    console.warn("[Spanner FTS Search Warning] Spanner query execution failed, falling back to catalog search:", error);
+    return await executeFallbackCatalogSearch(options, queryText, startTime);
+  }
+}
+
+/**
  * Execute Single Unified Cloud Spanner Hybrid Search (BM25 Search Index + Vector COSINE Distance + RRF Reranking).
  */
 export async function searchProducts(options: HybridSearchOptions): Promise<HybridSearchResult> {
+  if (options.mode === 'fts') {
+    return searchProductsFtsOnly(options);
+  }
+
   const startTime = Date.now();
   const queryText = (options.q || "").trim();
   const limit = options.limit || 20;
@@ -233,6 +376,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
         SELECT product_id
         FROM Products@{FORCE_INDEX=idx_products_search}
         WHERE SEARCH(search_tokens, @query_text) AND is_active = true${bm25FilterSql}
+        ORDER BY SCORE(search_tokens, @query_text) DESC
         LIMIT 50
       ),
       vector_results AS (
@@ -248,9 +392,11 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
         UNION DISTINCT
         SELECT product_id FROM vector_results
       )
-      SELECT p.product_id, p.category_id, p.brand, p.model, p.name_en, p.name_zh,
-             CAST(p.price_hkd AS FLOAT64) AS price_hkd, p.description_en, p.description_zh,
-             p.acoustic_signature_en, p.acoustic_signature_zh, p.image_url, p.is_active
+      SELECT p.product_id, p.category_id, p.category_name_en, p.category_name_zh,
+             p.category_description_en, p.category_description_zh, p.brand, p.model,
+             p.name_en, p.name_zh, CAST(p.price_hkd AS FLOAT64) AS price_hkd,
+             p.description_en, p.description_zh, p.acoustic_signature_en,
+             p.acoustic_signature_zh, p.image_url, p.is_active
       FROM candidates c
       JOIN Products p ON c.product_id = p.product_id
       WHERE p.is_active = true;
@@ -289,7 +435,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
     const candidateIds = candidateRows.map(p => p.product_id);
 
     // Fetch BM25 index ranks
-    const bm25Sql = `SELECT product_id FROM Products@{FORCE_INDEX=idx_products_search} WHERE SEARCH(search_tokens, @query_text) AND is_active = true${bm25FilterSql} LIMIT 50`;
+    const bm25Sql = `SELECT product_id FROM Products@{FORCE_INDEX=idx_products_search} WHERE SEARCH(search_tokens, @query_text) AND is_active = true${bm25FilterSql} ORDER BY SCORE(search_tokens, @query_text) DESC LIMIT 50`;
     const bm25Rows = await executeSpannerSql<{ product_id: string }>({
       sql: bm25Sql,
       params: { query_text: queryText, ...filterParams },

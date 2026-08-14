@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import Image from 'next/image';
 import { Header } from '../components/Header';
 import { CategoryGrid } from '../components/CategoryGrid';
 import { ProductCard } from '../components/ProductCard';
@@ -353,10 +354,11 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {filteredProducts.map((prod) => (
+                  {filteredProducts.map((prod, index) => (
                     <ProductCard
                       key={prod.id}
                       product={prod}
+                      priority={index < 6}
                       onSelectProduct={(p) => setSelectedProductModal(p)}
                     />
                   ))}
@@ -379,15 +381,12 @@ export default function HomePage({ initialProducts, categories }: HomePageProps)
 
               <div className="flex flex-col sm:flex-row gap-6 items-start">
                 <div className="w-full sm:w-48 h-48 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex-shrink-0 relative">
-                  <img
+                  <Image
                     src={selectedProductModal.imageUrl}
-                    loading="eager"
-                    decoding="async"
                     alt={selectedProductModal.nameEn}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
+                    fill
+                    sizes="192px"
+                    className="object-cover"
                   />
                 </div>
                 <div className="space-y-3 flex-1">

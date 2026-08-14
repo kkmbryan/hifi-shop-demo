@@ -8,9 +8,9 @@
 | **Author** | Lead Database Architect |
 | **Target Audience** | Data Engineers, Solution Architects, Backend Engineers, DBA Team |
 | **Target Storage Engine**| Google Cloud Spanner (GoogleSQL Dialect) |
-| **Version** | 1.1.0 |
+| **Version** | 1.2.0 |
 | **Status** | Approved DDL Specification |
-| **Last Updated** | August 13, 2026 |
+| **Last Updated** | August 14, 2026 |
 
 ---
 
@@ -52,6 +52,10 @@ erDiagram
     Products {
         string product_id PK "STRING(64)"
         string category_id FK "STRING(64)"
+        string category_name_en "STRING(255)"
+        string category_name_zh "STRING(255)"
+        string category_description_en "STRING(MAX)"
+        string category_description_zh "STRING(MAX)"
         string brand "STRING(128)"
         string model "STRING(128)"
         string name_en "STRING(255)"
@@ -114,6 +118,10 @@ Master table containing core audiophile product records, HKD catalog pricing, lo
 | :--- | :--- | :---: | :--- | :--- |
 | `product_id` | `STRING(64)` | **No** | `PRIMARY KEY` | Unique product identifier (e.g. `prod-chord-hugo-tt2`). |
 | `category_id` | `STRING(64)` | **No** | `FK -> Categories.category_id` | Foreign key referencing category taxonomy. |
+| `category_name_en` | `STRING(255)` | **No** | | Flattened English category name for zero-hop query projection & tokenization. |
+| `category_name_zh` | `STRING(255)` | **No** | | Flattened Traditional Chinese category name for zero-hop query projection & tokenization. |
+| `category_description_en` | `STRING(MAX)` | Yes | | Flattened English category description. |
+| `category_description_zh` | `STRING(MAX)` | Yes | | Flattened Traditional Chinese category description. |
 | `brand` | `STRING(128)` | **No** | | Manufacturer brand name (e.g. *"Chord Electronics"*, *"McIntosh"*). |
 | `model` | `STRING(128)` | **No** | | Hardware model designation (e.g. *"Hugo TT 2"*, *"MA8950"*). |
 | `name_en` | `STRING(255)` | **No** | | Full product title in English `en-US`. |
@@ -125,7 +133,7 @@ Master table containing core audiophile product records, HKD catalog pricing, lo
 | `acoustic_signature_zh` | `STRING(MAX)` | Yes | | Traditional Chinese summary of subjective acoustic characteristics. |
 | `image_url` | `STRING(1024)`| Yes | | Lossless GCS/CDN product image URL. |
 | `is_active` | `BOOL` | **No** | `DEFAULT (true)` | Product availability flag for search and catalog queries. |
-| `search_tokens` | `TOKENLIST` | **No** | `HIDDEN, AS (TOKENLIST_CONCAT(...))` | Generated TokenList column aggregating full-text search tokens. |
+| `search_tokens` | `TOKENLIST` | **No** | `HIDDEN, AS (TOKENLIST_CONCAT(...))` | Generated TokenList column aggregating full-text (`en`, `zh`) and substring search tokens across English and Chinese fields. |
 | `created_at` | `TIMESTAMP` | **No** | `allow_commit_timestamp=true` | Record creation timestamp. |
 | `updated_at` | `TIMESTAMP` | **No** | `allow_commit_timestamp=true` | Record update timestamp. |
 
@@ -196,30 +204,54 @@ To configure interleaving, child tables define a composite primary key whose lea
 
 ## 4. BM25 N-Gram Full-Text Search Indexing Specification
 
-To handle exact model numbers (e.g. *"HD800S"*, *"D90 III"*) and localized brand names in dual-language environments (`en-US` and `zh-HK`), Cloud Spanner native `SEARCH INDEX` functionality is configured.
+To handle exact model numbers (e.g. *"HD800S"*, *"D90 III"*), dual-language category names, and localized brand names in multilingual environments (`en-US` and `zh-HK`), Cloud Spanner native `SEARCH INDEX` functionality is configured with BCP-47 language-tagged tokenizers and substring n-grams.
 
 ```sql
 -- Generated TokenList column on Products table:
--- search_tokens TOKENLIST AS (TOKENLIST_CONCAT([
---   TOKENIZE_FULLTEXT(name_en),
---   TOKENIZE_FULLTEXT(brand),
---   TOKENIZE_FULLTEXT(model),
---   TOKENIZE_FULLTEXT(category_id),
---   TOKENIZE_FULLTEXT(description_en)
--- ])) HIDDEN
+search_tokens TOKENLIST AS (TOKENLIST_CONCAT([
+  -- English Full-Text Segmentation (language_tag => 'en')
+  TOKENIZE_FULLTEXT(name_en, language_tag=>'en'),
+  TOKENIZE_FULLTEXT(category_name_en, language_tag=>'en'),
+  TOKENIZE_FULLTEXT(category_description_en, language_tag=>'en'),
+  TOKENIZE_FULLTEXT(description_en, language_tag=>'en'),
+  TOKENIZE_FULLTEXT(acoustic_signature_en, language_tag=>'en'),
+
+  -- Traditional Chinese Full-Text Segmentation (language_tag => 'zh')
+  TOKENIZE_FULLTEXT(name_zh, language_tag=>'zh'),
+  TOKENIZE_FULLTEXT(category_name_zh, language_tag=>'zh'),
+  TOKENIZE_FULLTEXT(category_description_zh, language_tag=>'zh'),
+  TOKENIZE_FULLTEXT(description_zh, language_tag=>'zh'),
+  TOKENIZE_FULLTEXT(acoustic_signature_zh, language_tag=>'zh'),
+
+  -- Substring Tokenization for Alphanumeric Brand & Model Partial Matching (e.g. "800", "TT2", "D90")
+  TOKENIZE_SUBSTRING(brand, min_ngram_size=>2, max_ngram_size=>10),
+  TOKENIZE_SUBSTRING(model, min_ngram_size=>2, max_ngram_size=>10)
+])) HIDDEN
 
 -- Full-Text Search Index on Products table:
 CREATE SEARCH INDEX idx_products_search ON Products (
   search_tokens
+) STORING (
+  category_id,
+  category_name_en,
+  category_name_zh,
+  brand,
+  model,
+  name_en,
+  name_zh,
+  price_hkd,
+  image_url,
+  is_active
 );
 ```
 
 ### 4.1 Tokenization Strategy
-- **English Fields (`en-US`)**: Standard `TOKENIZE_FULLTEXT` breaks text into normalized lowercase word tokens, applying stemming and whitespace splitting.
-- **Traditional Chinese Fields (`zh-HK`)**: Chinese text lacks whitespace word delimiters. `TOKENIZE_NGRAMS(ngram_size_min=>1, ngram_size_max=>3)` generates unigrams, bigrams, and trigrams (e.g., *"溫暖人聲"* generates `溫`, `暖`, `溫暖`, `暖人`, `人聲`, `溫暖人`). This ensures high recall when HK users query with partial terms like *"膽機"* or *"解碼"*.
+- **English Full-Text Segmentation (`language_tag => 'en'`)**: Uses `TOKENIZE_FULLTEXT(..., language_tag=>'en')` across English product names, flattened category titles, taxonomy descriptions, detailed marketing text, and subjective acoustic profiles. It performs standard whitespace segmentation, lemmatization, and case normalization.
+- **Traditional Chinese Full-Text Segmentation (`language_tag => 'zh'`)**: Uses `TOKENIZE_FULLTEXT(..., language_tag=>'zh')` across Traditional Chinese product names, flattened category titles, taxonomy descriptions, marketing descriptions, and acoustic signatures. Spanner leverages BCP-47 language tag segmentation to automatically tokenize Chinese morphological phrases (e.g. *"解碼器"*, *"真空管"*, *"發燒級"*) without requiring artificial whitespace insertion.
+- **Substring Tokenization for Alphanumeric Identifiers (`TOKENIZE_SUBSTRING`)**: Applies `TOKENIZE_SUBSTRING(brand, min_ngram_size=>2, max_ngram_size=>10)` and `TOKENIZE_SUBSTRING(model, min_ngram_size=>2, max_ngram_size=>10)`. This generates character n-grams to guarantee partial string recall for numeric model numbers and abbreviations (e.g. *"800"* matching *"HD 800 S"*, *"TT2"* matching *"Hugo TT 2"*, *"D90"* matching *"D90 III SABRE"*).
 
 ### 4.2 Covered Index Storing Strategy
-The `STORING` clause includes `category_id`, `price_hkd`, `image_url`, and `is_active`. This allows backend search queries to return complete search results directly from the index without executing a secondary lookup back to the base `Products` table.
+The `STORING` clause includes `category_id`, `category_name_en`, `category_name_zh`, `brand`, `model`, `name_en`, `name_zh`, `price_hkd`, `image_url`, and `is_active`. This allows backend search queries to return complete search results directly from the index without executing a secondary lookup back to the base `Products` table.
 
 ---
 
@@ -275,7 +307,9 @@ candidates AS (
   UNION DISTINCT
   SELECT product_id FROM vector_results
 )
-SELECT p.product_id, p.category_id, p.brand, p.model, p.name_en, p.name_zh,
+SELECT p.product_id, p.category_id, p.category_name_en, p.category_name_zh,
+       p.category_description_en, p.category_description_zh,
+       p.brand, p.model, p.name_en, p.name_zh,
        CAST(p.price_hkd AS FLOAT64) AS price_hkd, p.description_en, p.description_zh,
        p.acoustic_signature_en, p.acoustic_signature_zh, p.image_url, p.is_active
 FROM candidates c
@@ -337,7 +371,9 @@ Cloud Spanner stores `price_hkd` as a fixed-precision `NUMERIC` data type to gua
 All SQL queries in backend services (`catalogService.ts` and `searchService.ts`) MUST project pricing columns using `CAST(price_hkd AS FLOAT64) AS price_hkd`:
 
 ```sql
-SELECT product_id, category_id, brand, model, name_en, name_zh,
+SELECT product_id, category_id, category_name_en, category_name_zh,
+       category_description_en, category_description_zh,
+       brand, model, name_en, name_zh,
        CAST(price_hkd AS FLOAT64) AS price_hkd,
        description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
        image_url, is_active

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { Product } from '../data/products';
 import { useLocale } from '../context/LocaleContext';
 import { useCart } from '../context/CartContext';
@@ -6,6 +7,7 @@ import { ShoppingBag, Check, Disc, Volume2, Zap, Wifi, CircleDot, Headphones, Ca
 
 interface ProductCardProps {
   product: Product;
+  priority?: boolean;
   onSelectProduct?: (product: Product) => void;
 }
 
@@ -22,7 +24,7 @@ const getCategoryIcon = (categoryId?: string) => {
   return Disc;
 };
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProduct }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, priority = false, onSelectProduct }) => {
   const { locale, t } = useLocale();
   const { cart, addToCart, formatHkd } = useCart();
   const [imgError, setImgError] = useState(false);
@@ -52,23 +54,33 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
 
   return (
     <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl overflow-hidden shadow-lg hover:border-amber-500/50 hover:shadow-amber-500/5 transition-all flex flex-col group">
-      {/* Image Header Container with Robust Fallback Placeholder Handling */}
+      {/* Image Header Container with Next.js Image and Audiophile Skeleton Shimmer */}
       <div className="relative aspect-video bg-slate-950 overflow-hidden border-b border-slate-700/60 flex items-center justify-center">
         {!showFallback ? (
           <>
             {!imgLoaded && (
-              <div className="absolute inset-0 bg-slate-900 animate-pulse flex items-center justify-center text-slate-700 z-10">
-                <CategoryIcon className="w-8 h-8 animate-pulse text-slate-600" />
+              <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center z-10 overflow-hidden">
+                {/* Background Pulse & Shimmer */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 animate-pulse" />
+                {/* Themed Animated Equalizer Bars */}
+                <div className="relative z-20 flex items-end gap-1 h-6">
+                  <span className="w-1 h-3 bg-amber-500/60 rounded-full animate-pulse" />
+                  <span className="w-1 h-5 bg-amber-400/80 rounded-full animate-pulse [animation-delay:150ms]" />
+                  <span className="w-1 h-4 bg-amber-500/70 rounded-full animate-pulse [animation-delay:300ms]" />
+                  <span className="w-1 h-6 bg-amber-400 rounded-full animate-pulse [animation-delay:75ms]" />
+                  <span className="w-1 h-3 bg-amber-500/60 rounded-full animate-pulse [animation-delay:225ms]" />
+                </div>
               </div>
             )}
-            <img
+            <Image
               src={product.imageUrl}
               alt={title}
-              loading="eager"
-              decoding="async"
+              fill
+              priority={priority}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
-              className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 ${
+              className={`object-cover group-hover:scale-105 transition-all duration-500 ${
                 imgLoaded ? 'opacity-100' : 'opacity-0'
               }`}
             />

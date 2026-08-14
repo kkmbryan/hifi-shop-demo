@@ -53,4 +53,15 @@ CREATE INDEX idx_specs_key_facet ON ProductSpecifications (
 -- -----------------------------------------------------------------------------
 CREATE SEARCH INDEX idx_products_search ON Products (
   search_tokens
+) STORING (
+  category_id,
+  category_name_en,
+  category_name_zh,
+  brand,
+  model,
+  name_en,
+  name_zh,
+  price_hkd,
+  image_url,
+  is_active
 );

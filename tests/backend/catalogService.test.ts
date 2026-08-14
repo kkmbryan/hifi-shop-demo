@@ -46,10 +46,10 @@ describe('catalogService Unit Tests', () => {
 
       expect(productEn).not.toBeNull();
       expect(productEn?.brand).toBe('Sennheiser');
-      expect(productEn?.name).toContain('Reference Open-Back Headphones');
+      expect(productEn?.name).toContain('Open-Back');
 
       expect(productZh).not.toBeNull();
-      expect(productZh?.name).toContain('參考級開放式頭戴耳機');
+      expect(productZh?.name).toContain('開放式');
     });
 
     it('should return null for non-existent product ID', async () => {

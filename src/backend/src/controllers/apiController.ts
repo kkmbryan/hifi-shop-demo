@@ -141,6 +141,7 @@ export async function handleSearch(req: Request, res: Response, next: NextFuncti
     const lang = (req.query.lang as string) || (req.query.locale as string) || 'en-US';
     const limit = parseNumericParam(req.query.limit, 20);
     const offset = parseNumericParam(req.query.offset, 0);
+    const mode = (req.query.mode as 'fts' | 'vector' | 'hybrid') || 'hybrid';
 
     const searchResult = await searchProducts({
       q,
@@ -150,7 +151,8 @@ export async function handleSearch(req: Request, res: Response, next: NextFuncti
       max_price,
       lang,
       limit,
-      offset
+      offset,
+      mode
     });
 
     res.status(200).json({

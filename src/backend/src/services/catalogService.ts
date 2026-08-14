@@ -24,6 +24,12 @@ export interface ProductSpecification {
 export interface Product {
   product_id: string;
   category_id: string;
+  category_name_en: string;
+  category_name_zh: string;
+  category_name?: string;
+  category_description_en?: string;
+  category_description_zh?: string;
+  category_description?: string;
   brand: string;
   model: string;
   name_en: string;
@@ -123,6 +129,8 @@ export function localizeProduct(product: Product, lang?: string): Product {
     ...product,
     name: zh ? product.name_zh : product.name_en,
     description: zh ? product.description_zh : product.description_en,
+    category_name: zh ? (product.category_name_zh || product.category_name_en) : (product.category_name_en || product.category_name_zh),
+    category_description: zh ? (product.category_description_zh || product.category_description_en) : (product.category_description_en || product.category_description_zh),
     acoustic_signature: zh ? product.acoustic_signature_zh : product.acoustic_signature_en,
     specifications: product.specifications?.map(s => ({
       ...s,
@@ -195,7 +203,9 @@ export async function getProducts(options: ProductQueryOptions = {}): Promise<{
   const total = countRows.length > 0 ? Number(countRows[0].count) : 0;
 
   const sql = `
-    SELECT product_id, category_id, brand, model, name_en, name_zh, CAST(price_hkd AS FLOAT64) AS price_hkd,
+    SELECT product_id, category_id, category_name_en, category_name_zh,
+           category_description_en, category_description_zh, brand, model,
+           name_en, name_zh, CAST(price_hkd AS FLOAT64) AS price_hkd,
            description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
            image_url, is_active
     FROM Products
@@ -270,7 +280,7 @@ export async function getProducts(options: ProductQueryOptions = {}): Promise<{
  * Get product by ID strictly from Cloud Spanner with full specs.
  */
 export async function getProductById(productId: string, lang?: string): Promise<Product | null> {
-  const sql = `SELECT product_id, category_id, brand, model, name_en, name_zh, CAST(price_hkd AS FLOAT64) AS price_hkd, description_en, description_zh, acoustic_signature_en, acoustic_signature_zh, image_url, is_active FROM Products WHERE product_id = @product_id AND is_active = true`;
+  const sql = `SELECT product_id, category_id, category_name_en, category_name_zh, category_description_en, category_description_zh, brand, model, name_en, name_zh, CAST(price_hkd AS FLOAT64) AS price_hkd, description_en, description_zh, acoustic_signature_en, acoustic_signature_zh, image_url, is_active FROM Products WHERE product_id = @product_id AND is_active = true`;
   const rows = await executeSpannerSql<Product>({ sql, params: { product_id: productId } });
 
   if (rows === null) {
