@@ -1731,60 +1731,59 @@ function calculateMatchScore(p: MockProductRow, queryText: string): number {
   const q = queryText.trim().toLowerCase();
   const terms = q.split(/\s+/).filter(Boolean);
 
-  let score = 0;
+  let totalScore = 0;
+
   for (const term of terms) {
-    let termMatched = false;
-    // Model match (highest weight)
-    if (p.model.toLowerCase().includes(term)) {
-      score += 15;
-      termMatched = true;
-    }
-    // Brand match
-    if (p.brand.toLowerCase().includes(term)) {
-      score += 10;
-      termMatched = true;
-    }
-    // Title / Name match
-    if (p.name_en.toLowerCase().includes(term) || p.name_zh.toLowerCase().includes(term)) {
-      score += 12;
-      termMatched = true;
-    }
-    // Category match
+    let tier1Matched = false;
+    let tier2Matched = false;
+    let tier3Matched = false;
+
+    // Tier 1 (4.0x): Name, Brand, Model, Category Name & ID, Product ID
     if (
+      p.model.toLowerCase().includes(term) ||
+      p.name_en.toLowerCase().includes(term) ||
+      p.name_zh.toLowerCase().includes(term) ||
+      p.brand.toLowerCase().includes(term) ||
       p.category_name_en.toLowerCase().includes(term) ||
       p.category_name_zh.toLowerCase().includes(term) ||
       p.category_id.toLowerCase().includes(term) ||
+      p.product_id.toLowerCase().includes(term)
+    ) {
+      tier1Matched = true;
+    }
+
+    // Tier 2 (2.5x): Category Description
+    if (
       (p.category_description_en && p.category_description_en.toLowerCase().includes(term)) ||
       (p.category_description_zh && p.category_description_zh.toLowerCase().includes(term))
     ) {
-      score += 8;
-      termMatched = true;
+      tier2Matched = true;
     }
-    // Acoustic signature match
+
+    // Tier 3 (1.0x): Product Description & Acoustic Signature
     if (
+      p.description_en.toLowerCase().includes(term) ||
+      p.description_zh.toLowerCase().includes(term) ||
       p.acoustic_signature_en.toLowerCase().includes(term) ||
       p.acoustic_signature_zh.toLowerCase().includes(term)
     ) {
-      score += 7;
-      termMatched = true;
-    }
-    // Description match
-    if (
-      p.description_en.toLowerCase().includes(term) ||
-      p.description_zh.toLowerCase().includes(term)
-    ) {
-      score += 5;
-      termMatched = true;
+      tier3Matched = true;
     }
 
-    // Direct product_id match
-    if (p.product_id.toLowerCase().includes(term)) {
-      score += 6;
-      termMatched = true;
+    let termScore = 0;
+    if (tier1Matched) termScore += 4.0;
+    if (tier2Matched) termScore += 2.5;
+    if (tier3Matched) termScore += 1.0;
+
+    // Exact model or brand boost
+    if (p.model.toLowerCase() === term || p.model.toLowerCase().split(/\s+/).includes(term) || p.brand.toLowerCase() === term) {
+      termScore += 4.0;
     }
+
+    totalScore += termScore;
   }
 
-  return score;
+  return totalScore;
 }
 
 export async function mockExecuteSpannerSql(query: any): Promise<any[] | null> {
@@ -1799,7 +1798,7 @@ export async function mockExecuteSpannerSql(query: any): Promise<any[] | null> {
     let list = MOCK_DB_PRODUCTS.filter(p => p.is_active);
 
     const q = (params.query_text || params.query || "").trim();
-    if (q && sqlString.includes("SEARCH(search_tokens")) {
+    if (q && (sqlString.includes("SEARCH(") || sqlString.includes("primary_tokens") || sqlString.includes("search_tokens"))) {
       list = list.filter(p => calculateMatchScore(p, q) > 0);
     }
 
@@ -1827,54 +1826,7 @@ export async function mockExecuteSpannerSql(query: any): Promise<any[] | null> {
     return [{ count: list.length }];
   }
 
-  // Pure FTS Search query (SELECT ... SCORE(...) AS score ... FROM Products@{FORCE_INDEX=idx_products_search} ...)
-  if (
-    sqlString.includes("SCORE(search_tokens") &&
-    sqlString.includes("idx_products_search") &&
-    !sqlString.includes("bm25_results") &&
-    !sqlString.includes("SELECT product_id FROM Products")
-  ) {
-    const q = (params.query_text || params.query || "").trim();
-    let list = MOCK_DB_PRODUCTS.filter(p => p.is_active);
-
-    if (params.category_id || params.category) {
-      const cat = (params.category_id || params.category).toLowerCase();
-      list = list.filter(p => p.category_id.toLowerCase() === cat);
-    }
-    if (params.brand_pattern) {
-      const bStr = params.brand_pattern.replace(/%/g, "").toLowerCase();
-      list = list.filter(p => p.brand.toLowerCase().includes(bStr));
-    }
-    if (params.brand) {
-      const bStr = params.brand.replace(/%/g, "").toLowerCase();
-      list = list.filter(p => p.brand.toLowerCase().includes(bStr));
-    }
-    if (params.min_price !== undefined) {
-      list = list.filter(p => p.price_hkd >= params.min_price);
-    }
-    if (params.max_price !== undefined) {
-      list = list.filter(p => p.price_hkd <= params.max_price);
-    }
-
-    const scored = list
-      .map(p => ({
-        ...p,
-        score: calculateMatchScore(p, q)
-      }))
-      .filter(item => item.score > 0);
-
-    scored.sort((a, b) => b.score - a.score);
-
-    // Check limit / offset
-    const limitMatch = sqlString.match(/LIMIT\s+(\d+)/i);
-    const offsetMatch = sqlString.match(/OFFSET\s+(\d+)/i);
-    const limit = limitMatch ? parseInt(limitMatch[1], 10) : 50;
-    const offset = offsetMatch ? parseInt(offsetMatch[1], 10) : 0;
-
-    return scored.slice(offset, offset + limit);
-  }
-
-  // Hybrid Unified Query (WITH bm25_results AS ...)
+  // 2. Hybrid Unified Query (WITH bm25_results AS ...)
   if (sqlString.includes("bm25_results") || sqlString.includes("candidate_ranks")) {
     const q = (params.query_text || params.query || "").trim();
     let baseList = MOCK_DB_PRODUCTS.filter(p => p.is_active);
@@ -1932,8 +1884,57 @@ export async function mockExecuteSpannerSql(query: any): Promise<any[] | null> {
     return results;
   }
 
-  // BM25 Ranking query in Hybrid search (SELECT product_id FROM Products@{FORCE_INDEX=idx_products_search} ...)
-  if (sqlString.includes("FORCE_INDEX=idx_products_search") && sqlString.includes("SELECT product_id FROM Products")) {
+  // 3. Pure FTS Search query (SELECT product_id, category_id, category_name_en... FROM Products@{FORCE_INDEX=idx_products_search} ...)
+  if (
+    sqlString.includes("idx_products_search") &&
+    sqlString.includes("category_name_en") &&
+    !sqlString.includes("bm25_results")
+  ) {
+    const q = (params.query_text || params.query || "").trim();
+    let list = MOCK_DB_PRODUCTS.filter(p => p.is_active);
+
+    if (params.category_id || params.category) {
+      const cat = (params.category_id || params.category).toLowerCase();
+      list = list.filter(p => p.category_id.toLowerCase() === cat);
+    }
+    if (params.brand_pattern) {
+      const bStr = params.brand_pattern.replace(/%/g, "").toLowerCase();
+      list = list.filter(p => p.brand.toLowerCase().includes(bStr));
+    }
+    if (params.brand) {
+      const bStr = params.brand.replace(/%/g, "").toLowerCase();
+      list = list.filter(p => p.brand.toLowerCase().includes(bStr));
+    }
+    if (params.min_price !== undefined) {
+      list = list.filter(p => p.price_hkd >= params.min_price);
+    }
+    if (params.max_price !== undefined) {
+      list = list.filter(p => p.price_hkd <= params.max_price);
+    }
+
+    const scored = list
+      .map(p => ({
+        ...p,
+        score: calculateMatchScore(p, q)
+      }))
+      .filter(item => item.score > 0);
+
+    scored.sort((a, b) => b.score - a.score);
+
+    // Check limit / offset
+    const limitMatch = sqlString.match(/LIMIT\s+(\d+)/i);
+    const offsetMatch = sqlString.match(/OFFSET\s+(\d+)/i);
+    const limit = limitMatch ? parseInt(limitMatch[1], 10) : 50;
+    const offset = offsetMatch ? parseInt(offsetMatch[1], 10) : 0;
+
+    return scored.slice(offset, offset + limit);
+  }
+
+  // 4. BM25 Ranking query in Hybrid search (SELECT product_id ... FROM Products@{FORCE_INDEX=idx_products_search} ...)
+  if (
+    sqlString.includes("FORCE_INDEX=idx_products_search") &&
+    (sqlString.includes("weighted_bm25_score") || sqlString.includes("SELECT product_id FROM Products") || sqlString.includes("SELECT product_id,"))
+  ) {
     const q = (params.query_text || params.query || "").trim();
     let list = MOCK_DB_PRODUCTS.filter(p => p.is_active);
     if (params.category_id || params.category) {
@@ -1963,7 +1964,7 @@ export async function mockExecuteSpannerSql(query: any): Promise<any[] | null> {
     return matches.slice(0, 50).map(item => ({ product_id: item.p.product_id }));
   }
 
-  if (sqlString.includes("SEARCH(Products, @query)") || sqlString.includes("SEARCH(search_tokens")) {
+  if (sqlString.includes("SEARCH(Products, @query)") || sqlString.includes("SEARCH(")) {
     const q = (params.query_text || params.query || "").trim();
     const matches = MOCK_DB_PRODUCTS.filter(p => calculateMatchScore(p, q) > 0);
     return matches.map(p => ({ product_id: p.product_id }));

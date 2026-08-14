@@ -133,7 +133,9 @@ Master table containing core audiophile product records, HKD catalog pricing, lo
 | `acoustic_signature_zh` | `STRING(MAX)` | Yes | | Traditional Chinese summary of subjective acoustic characteristics. |
 | `image_url` | `STRING(1024)`| Yes | | Lossless GCS/CDN product image URL. |
 | `is_active` | `BOOL` | **No** | `DEFAULT (true)` | Product availability flag for search and catalog queries. |
-| `search_tokens` | `TOKENLIST` | **No** | `HIDDEN, AS (TOKENLIST_CONCAT(...))` | Generated TokenList column aggregating full-text (`en`, `zh`) and substring search tokens across English and Chinese fields. |
+| `primary_tokens` | `TOKENLIST` | **No** | `HIDDEN, AS (TOKENLIST_CONCAT(...))` | Tier 1 TokenList for product name, brand, model, and category names (En & Zh). Query Weight: 4.0x. |
+| `category_tokens` | `TOKENLIST` | **No** | `HIDDEN, AS (TOKENLIST_CONCAT(...))` | Tier 2 TokenList for category taxonomy names and descriptions (En & Zh). Query Weight: 2.5x. |
+| `description_tokens` | `TOKENLIST` | **No** | `HIDDEN, AS (TOKENLIST_CONCAT(...))` | Tier 3 TokenList for long-form marketing descriptions and acoustic signatures (En & Zh). Query Weight: 1.0x. |
 | `created_at` | `TIMESTAMP` | **No** | `allow_commit_timestamp=true` | Record creation timestamp. |
 | `updated_at` | `TIMESTAMP` | **No** | `allow_commit_timestamp=true` | Record update timestamp. |
 
@@ -202,35 +204,43 @@ To configure interleaving, child tables define a composite primary key whose lea
 
 ---
 
-## 4. BM25 N-Gram Full-Text Search Indexing Specification
+## 4. BM25 Tiered Multi-TokenList Full-Text Search Indexing Specification
 
-To handle exact model numbers (e.g. *"HD800S"*, *"D90 III"*), dual-language category names, and localized brand names in multilingual environments (`en-US` and `zh-HK`), Cloud Spanner native `SEARCH INDEX` functionality is configured with BCP-47 language-tagged tokenizers and substring n-grams.
+To handle exact model numbers (e.g. *"HD 800 S"*, *"D90 III"*), dual-language category taxonomy, and brand queries without allowing long product descriptions to dilute or overshadow high-intent keyword matches, Cloud Spanner is configured with a **3-Tier Multi-TokenList Architecture**.
 
 ```sql
--- Generated TokenList column on Products table:
-search_tokens TOKENLIST AS (TOKENLIST_CONCAT([
-  -- English Full-Text Segmentation (language_tag => 'en')
+-- Generated TokenList columns on Products table:
+-- Tier 1: Product Name, Brand, Model & Category Title (4.0x Weight)
+primary_tokens TOKENLIST AS (TOKENLIST_CONCAT([
   TOKENIZE_FULLTEXT(name_en, language_tag=>'en'),
   TOKENIZE_FULLTEXT(category_name_en, language_tag=>'en'),
-  TOKENIZE_FULLTEXT(category_description_en, language_tag=>'en'),
-  TOKENIZE_FULLTEXT(description_en, language_tag=>'en'),
-  TOKENIZE_FULLTEXT(acoustic_signature_en, language_tag=>'en'),
-
-  -- Traditional Chinese Full-Text Segmentation (language_tag => 'zh')
   TOKENIZE_FULLTEXT(name_zh, language_tag=>'zh'),
   TOKENIZE_FULLTEXT(category_name_zh, language_tag=>'zh'),
-  TOKENIZE_FULLTEXT(category_description_zh, language_tag=>'zh'),
-  TOKENIZE_FULLTEXT(description_zh, language_tag=>'zh'),
-  TOKENIZE_FULLTEXT(acoustic_signature_zh, language_tag=>'zh'),
-
-  -- Brand & Model Full-Text Tokenization
   TOKENIZE_FULLTEXT(brand, language_tag=>'en'),
   TOKENIZE_FULLTEXT(model, language_tag=>'en')
+])) HIDDEN,
+
+-- Tier 2: Category Taxonomy & Intent (2.5x Weight)
+category_tokens TOKENLIST AS (TOKENLIST_CONCAT([
+  TOKENIZE_FULLTEXT(category_name_en, language_tag=>'en'),
+  TOKENIZE_FULLTEXT(category_description_en, language_tag=>'en'),
+  TOKENIZE_FULLTEXT(category_name_zh, language_tag=>'zh'),
+  TOKENIZE_FULLTEXT(category_description_zh, language_tag=>'zh')
+])) HIDDEN,
+
+-- Tier 3: Body Marketing Description & Acoustic Signatures (1.0x Weight)
+description_tokens TOKENLIST AS (TOKENLIST_CONCAT([
+  TOKENIZE_FULLTEXT(description_en, language_tag=>'en'),
+  TOKENIZE_FULLTEXT(acoustic_signature_en, language_tag=>'en'),
+  TOKENIZE_FULLTEXT(description_zh, language_tag=>'zh'),
+  TOKENIZE_FULLTEXT(acoustic_signature_zh, language_tag=>'zh')
 ])) HIDDEN
 
--- Full-Text Search Index on Products table:
+-- Unified Multi-TokenList Search Index on Products table:
 CREATE SEARCH INDEX idx_products_search ON Products (
-  search_tokens
+  primary_tokens,
+  category_tokens,
+  description_tokens
 ) STORING (
   category_id,
   category_name_en,
@@ -245,12 +255,29 @@ CREATE SEARCH INDEX idx_products_search ON Products (
 );
 ```
 
-### 4.1 Tokenization Strategy
-- **English Full-Text Segmentation (`language_tag => 'en'`)**: Uses `TOKENIZE_FULLTEXT(..., language_tag=>'en')` across English product names, flattened category titles, taxonomy descriptions, detailed marketing text, and subjective acoustic profiles. It performs standard whitespace segmentation, lemmatization, and case normalization.
-- **Traditional Chinese Full-Text Segmentation (`language_tag => 'zh'`)**: Uses `TOKENIZE_FULLTEXT(..., language_tag=>'zh')` across Traditional Chinese product names, flattened category titles, taxonomy descriptions, marketing descriptions, and acoustic signatures. Spanner leverages BCP-47 language tag segmentation to automatically tokenize Chinese morphological phrases (e.g. *"解碼器"*, *"真空管"*, *"發燒級"*) without requiring artificial whitespace insertion.
-- **Substring Tokenization for Alphanumeric Identifiers (`TOKENIZE_SUBSTRING`)**: Applies `TOKENIZE_SUBSTRING(brand, min_ngram_size=>2, max_ngram_size=>10)` and `TOKENIZE_SUBSTRING(model, min_ngram_size=>2, max_ngram_size=>10)`. This generates character n-grams to guarantee partial string recall for numeric model numbers and abbreviations (e.g. *"800"* matching *"HD 800 S"*, *"TT2"* matching *"Hugo TT 2"*, *"D90"* matching *"D90 III SABRE"*).
+### 4.1 Tokenization Strategy & Tiered Weighting
+- **Tier 1: Core Product Identity (`primary_tokens`, 4.0x Weight)**:
+  - Tokenizes product names (`name_en`, `name_zh`), category names (`category_name_en`, `category_name_zh`), brand (`brand`), and model designation (`model`).
+  - Employs BCP-47 `en` and `zh` tokenization. Matches in this tier represent direct SKU, brand, or category intent and are boosted with a **4.0x weight multiplier**.
+- **Tier 2: Category Context & Taxonomy (`category_tokens`, 2.5x Weight)**:
+  - Tokenizes category titles and category descriptions (`category_description_en`, `category_description_zh`).
+  - Matches in this tier capture category-level domain searches (e.g. *"解碼器"*, *"真空管"*, *"唱臂"*) and are boosted with a **2.5x weight multiplier**.
+- **Tier 3: Long-Form Body & Acoustic Signatures (`description_tokens`, 1.0x Weight)**:
+  - Tokenizes long-form product marketing text and subjective acoustic profiles (`description_en`, `description_zh`, `acoustic_signature_en`, `acoustic_signature_zh`).
+  - Captures subjective sound descriptions and extensive technical details with a **1.0x baseline weight multiplier**.
 
-### 4.2 Covered Index Storing Strategy
+### 4.2 Query-Time Linear Score Formulation
+Cloud Spanner calculates the composite BM25 relevance score directly inside SQL using linear weighting across the indexed token lists:
+
+```sql
+(
+  IF(SEARCH(primary_tokens, @query_text), SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
+  IF(SEARCH(category_tokens, @query_text), SCORE(category_tokens, @query_text), 0.0) * 2.5 +
+  IF(SEARCH(description_tokens, @query_text), SCORE(description_tokens, @query_text), 0.0) * 1.0
+) AS score
+```
+
+### 4.3 Covered Index Storing Strategy
 The `STORING` clause includes `category_id`, `category_name_en`, `category_name_zh`, `brand`, `model`, `name_en`, `name_zh`, `price_hkd`, `image_url`, and `is_active`. This allows backend search queries to return complete search results directly from the index without executing a secondary lookup back to the base `Products` table.
 
 ---
@@ -279,14 +306,24 @@ Backend search API executes parallel scoring using Reciprocal Rank Fusion (RRF) 
 
 ```sql
 WITH bm25_results AS (
-  SELECT product_id
+  SELECT product_id,
+    (
+      IF(SEARCH(primary_tokens, @query_text), SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
+      IF(SEARCH(category_tokens, @query_text), SCORE(category_tokens, @query_text), 0.0) * 2.5 +
+      IF(SEARCH(description_tokens, @query_text), SCORE(description_tokens, @query_text), 0.0) * 1.0
+    ) AS weighted_bm25_score
   FROM Products@{FORCE_INDEX=idx_products_search}
-  WHERE SEARCH(search_tokens, @query_text) 
+  WHERE (
+    SEARCH(primary_tokens, @query_text) OR
+    SEARCH(category_tokens, @query_text) OR
+    SEARCH(description_tokens, @query_text)
+  )
     AND is_active = true
     AND LOWER(category_id) = LOWER(@category) -- Optional pushed filter predicate
     AND price_hkd >= @min_price               -- Optional pushed filter predicate
     AND price_hkd <= @max_price               -- Optional pushed filter predicate
     AND LOWER(brand) LIKE @brand_pattern       -- Optional pushed filter predicate
+  ORDER BY weighted_bm25_score DESC
   LIMIT 50
 ),
 vector_results AS (

@@ -127,10 +127,10 @@ describe('Frontend Search & Multi-Faceted Filter Test Suite', () => {
       fireEvent.change(searchInput, { target: { value: 'Chord' } });
 
       expect(mockReplace).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           pathname: '/',
-          query: { q: 'Chord' },
-        },
+          query: expect.objectContaining({ q: 'Chord' }),
+        }),
         undefined,
         { shallow: true }
       );
@@ -222,10 +222,10 @@ describe('Frontend Search & Multi-Faceted Filter Test Suite', () => {
 
       await waitFor(() => {
         expect(mockReplace).toHaveBeenCalledWith(
-          {
+          expect.objectContaining({
             pathname: '/',
-            query: { q: '300B 膽機 溫暖聲場' },
-          },
+            query: expect.objectContaining({ q: '300B 膽機 溫暖聲場' }),
+          }),
           undefined,
           { shallow: true }
         );
@@ -286,5 +286,141 @@ describe('Frontend Search & Multi-Faceted Filter Test Suite', () => {
         expect(screen.getByText('noProductsFound')).toBeInTheDocument();
       });
     });
+
+    describe('Search Engine Mode Toggle & Multi-Engine Behavior', () => {
+      it('defaults to hybrid search mode with proper banner and badge', () => {
+        render(
+          <TestWrapper>
+            <HomePage initialProducts={MOCK_PRODUCTS} categories={MOCK_CATEGORIES} />
+          </TestWrapper>
+        );
+
+        expect(
+          screen.getByText(/BM25 \+ 768d Vector KNN \(Reciprocal Rank Fusion\)/i)
+        ).toBeInTheDocument();
+        expect(
+          screen.getAllByText(/雙引擎混合搜尋 \(Hybrid RRF\)/i).length
+        ).toBeGreaterThanOrEqual(1);
+      });
+
+      it('initializes to fts search mode when URL query has mode=fts', async () => {
+        mockRouterQuery = { mode: 'fts' };
+
+        render(
+          <TestWrapper>
+            <HomePage initialProducts={MOCK_PRODUCTS} categories={MOCK_CATEGORIES} />
+          </TestWrapper>
+        );
+
+        await waitFor(() => {
+          expect(
+            screen.getByText(/Cloud Spanner 3-Tier Weighted BM25 \(No Vector Embeddings\)/i)
+          ).toBeInTheDocument();
+        });
+      });
+
+      it('toggles mode from Hero Banner, synchronizes URL, and passes mode to search API fetch', async () => {
+        render(
+          <TestWrapper>
+            <HomePage initialProducts={MOCK_PRODUCTS} categories={MOCK_CATEGORIES} />
+          </TestWrapper>
+        );
+
+        // Type search query
+        const searchInput = screen.getByPlaceholderText(/搜尋/i);
+        fireEvent.change(searchInput, { target: { value: 'Chord' } });
+
+        await waitFor(() => {
+          expect(global.fetch).toHaveBeenCalledWith(
+            expect.stringContaining('mode=hybrid'),
+            expect.anything()
+          );
+        });
+
+        // Click pure FTS toggle in Hero Banner
+        const ftsButtons = screen.getAllByRole('button', { name: /純全文搜尋/i });
+        fireEvent.click(ftsButtons[0]);
+
+        expect(mockReplace).toHaveBeenCalledWith(
+          expect.objectContaining({
+            query: expect.objectContaining({ mode: 'fts' }),
+          }),
+          undefined,
+          { shallow: true }
+        );
+
+        await waitFor(() => {
+          expect(global.fetch).toHaveBeenCalledWith(
+            expect.stringContaining('mode=fts'),
+            expect.anything()
+          );
+        });
+      });
+
+      it('toggles mode from Sidebar selector card and updates UI state', async () => {
+        render(
+          <TestWrapper>
+            <HomePage initialProducts={MOCK_PRODUCTS} categories={MOCK_CATEGORIES} />
+          </TestWrapper>
+        );
+
+        const ftsButtons = screen.getAllByRole('button', { name: /純全文搜尋/i });
+        // The second button is in the sidebar
+        const sidebarFtsBtn = ftsButtons[ftsButtons.length - 1];
+        fireEvent.click(sidebarFtsBtn);
+
+        expect(mockReplace).toHaveBeenCalledWith(
+          expect.objectContaining({
+            query: expect.objectContaining({ mode: 'fts' }),
+          }),
+          undefined,
+          { shallow: true }
+        );
+
+        await waitFor(() => {
+          expect(
+            screen.getByText(/Cloud Spanner 3-Tier Weighted BM25 \(No Vector Embeddings\)/i)
+          ).toBeInTheDocument();
+        });
+      });
+
+      it('displays mode-specific loading messages during search execution', async () => {
+        let resolvePromise: (val: any) => void;
+        (global as any).fetch = jest.fn().mockImplementation(() =>
+          new Promise((resolve) => {
+            resolvePromise = resolve;
+          })
+        );
+
+        const { rerender } = render(
+          <TestWrapper>
+            <HomePage initialProducts={MOCK_PRODUCTS} categories={MOCK_CATEGORIES} />
+          </TestWrapper>
+        );
+
+        const searchInput = screen.getByPlaceholderText(/搜尋/i);
+        fireEvent.change(searchInput, { target: { value: 'Chord' } });
+
+        // In hybrid mode, loading text reflects hybrid search
+        expect(
+          screen.getByText(/正在查詢 Cloud Spanner 雙引擎混合搜尋/i)
+        ).toBeInTheDocument();
+
+        // Switch to FTS mode
+        const ftsButtons = screen.getAllByRole('button', { name: /純全文搜尋/i });
+        fireEvent.click(ftsButtons[0]);
+
+        expect(
+          screen.getByText(/正在查詢 Cloud Spanner 3-Tier 加權全文搜尋/i)
+        ).toBeInTheDocument();
+
+        // Resolve pending promise
+        resolvePromise!({
+          ok: true,
+          json: () => Promise.resolve({ products: [MOCK_PRODUCTS[0]] }),
+        });
+      });
+    });
   });
 });
+

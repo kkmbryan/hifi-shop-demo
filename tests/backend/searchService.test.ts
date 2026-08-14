@@ -138,6 +138,21 @@ describe('searchService Unit Tests', () => {
       const topZh = resultZh.products[0];
       expect(topZh.category_name).toBe(topZh.category_name_zh);
     });
+
+    it('should prioritize Tier 1 title/model matches over Tier 3 description-only matches with 3-tier field weighting', async () => {
+      const result = await searchProductsFtsOnly({ q: 'Envy' });
+      expect(result.products.length).toBeGreaterThan(0);
+      // Feliks Audio Envy has model 'Envy' (Tier 1) -> must rank #1
+      expect(result.products[0].product_id).toBe('prod-feliks-envy');
+      expect(result.products[0].model).toBe('Envy');
+    });
+
+    it('should rank exact model name above incidental description mentions in pure FTS mode', async () => {
+      const result = await searchProducts({ q: 'D90', mode: 'fts' });
+      expect(result.products.length).toBeGreaterThan(0);
+      expect(result.products[0].model).toContain('D90');
+      expect(result.products[0].brand).toBe('Topping');
+    });
   });
 
   describe('Reciprocal Rank Fusion (RRF) Formula & Sorting in Hybrid Mode', () => {

@@ -122,34 +122,43 @@ async function executeFallbackCatalogSearch(
   const qLower = queryText.toLowerCase();
   const searchTerms = qLower.split(/\s+/).filter(Boolean);
 
-  const matched = allProducts.filter(p => {
-    if (options.category && p.category_id.toLowerCase() !== options.category.toLowerCase()) return false;
-    if (options.min_price !== undefined && p.price_hkd < options.min_price) return false;
-    if (options.max_price !== undefined && p.price_hkd > options.max_price) return false;
-    if (options.brand && !p.brand.toLowerCase().includes(options.brand.toLowerCase())) return false;
+  const scored = allProducts
+    .map(p => {
+      if (options.category && p.category_id.toLowerCase() !== options.category.toLowerCase()) return null;
+      if (options.min_price !== undefined && p.price_hkd < options.min_price) return null;
+      if (options.max_price !== undefined && p.price_hkd > options.max_price) return null;
+      if (options.brand && !p.brand.toLowerCase().includes(options.brand.toLowerCase())) return null;
 
-    if (!qLower) return true;
+      if (!qLower) return { product: p, score: 1 };
 
-    const searchableText = [
-      p.name_en,
-      p.name_zh,
-      p.brand,
-      p.model,
-      p.category_name_en,
-      p.category_name_zh,
-      p.category_description_en,
-      p.category_description_zh,
-      p.description_en,
-      p.description_zh,
-      p.acoustic_signature_en,
-      p.acoustic_signature_zh,
-      p.category_id
-    ].filter(Boolean).join(" ").toLowerCase();
+      let productScore = 0;
+      // Tier 1 (4.0x): Name, Brand, Model, Category Name
+      const tier1Text = [p.name_en, p.name_zh, p.brand, p.model, p.category_name_en, p.category_name_zh, p.category_id, p.product_id].filter(Boolean).join(" ").toLowerCase();
+      // Tier 2 (2.5x): Category Description
+      const tier2Text = [p.category_description_en, p.category_description_zh].filter(Boolean).join(" ").toLowerCase();
+      // Tier 3 (1.0x): Product Description, Acoustic Signature
+      const tier3Text = [p.description_en, p.description_zh, p.acoustic_signature_en, p.acoustic_signature_zh].filter(Boolean).join(" ").toLowerCase();
 
-    return searchTerms.some(term => searchableText.includes(term));
-  });
+      for (const term of searchTerms) {
+        if (tier1Text.includes(term)) {
+          productScore += 4.0;
+        }
+        if (tier2Text.includes(term)) {
+          productScore += 2.5;
+        }
+        if (tier3Text.includes(term)) {
+          productScore += 1.0;
+        }
+      }
 
-  const scored = matched.map((p, idx) => {
+      if (productScore <= 0) return null;
+      return { product: p, score: productScore };
+    })
+    .filter((item): item is { product: Product; score: number } => item !== null);
+
+  scored.sort((a, b) => b.score - a.score);
+
+  const ranked = scored.map((item, idx) => {
     const bm25Rank = idx + 1;
     const vectorRank = idx + 1;
     const bm25Term = WEIGHT_BM25 / (K_RRF + bm25Rank);
@@ -157,14 +166,14 @@ async function executeFallbackCatalogSearch(
     const rrfScore = bm25Term + vectorTerm;
 
     return {
-      ...localizeProduct(p, options.lang),
+      ...localizeProduct(item.product, options.lang),
       rrf_score: rrfScore,
       bm25_rank: bm25Rank,
       vector_rank: vectorRank
     };
   });
 
-  const paginated = scored.slice(offset, offset + limit);
+  const paginated = ranked.slice(offset, offset + limit);
 
   return {
     query: queryText,
@@ -177,7 +186,7 @@ async function executeFallbackCatalogSearch(
 }
 
 /**
- * Execute Pure Full-Text Search (FTS) using Cloud Spanner SEARCH(search_tokens, @query_text) and SCORE ranking.
+ * Execute Pure Full-Text Search (FTS) using Cloud Spanner 3-Tier Multi-TokenList Field Weighting.
  * No embedding generation is performed.
  */
 export async function searchProductsFtsOnly(options: HybridSearchOptions): Promise<HybridSearchResult> {
@@ -231,17 +240,30 @@ export async function searchProductsFtsOnly(options: HybridSearchOptions): Promi
              category_description_en, category_description_zh, brand, model,
              name_en, name_zh, CAST(price_hkd AS FLOAT64) AS price_hkd,
              description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
-             image_url, is_active, SCORE(search_tokens, @query_text) AS score
+             image_url, is_active,
+             (
+               IF(SEARCH(primary_tokens, @query_text), SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
+               IF(SEARCH(category_tokens, @query_text), SCORE(category_tokens, @query_text), 0.0) * 2.5 +
+               IF(SEARCH(description_tokens, @query_text), SCORE(description_tokens, @query_text), 0.0) * 1.0
+             ) AS score
       FROM Products@{FORCE_INDEX=idx_products_search}
-      WHERE SEARCH(search_tokens, @query_text) AND is_active = true${ftsFilterSql}
-      ORDER BY SCORE(search_tokens, @query_text) DESC
+      WHERE (
+        SEARCH(primary_tokens, @query_text) OR
+        SEARCH(category_tokens, @query_text) OR
+        SEARCH(description_tokens, @query_text)
+      ) AND is_active = true${ftsFilterSql}
+      ORDER BY score DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
 
     const countSql = `
       SELECT COUNT(*) AS count
       FROM Products@{FORCE_INDEX=idx_products_search}
-      WHERE SEARCH(search_tokens, @query_text) AND is_active = true${ftsFilterSql}
+      WHERE (
+        SEARCH(primary_tokens, @query_text) OR
+        SEARCH(category_tokens, @query_text) OR
+        SEARCH(description_tokens, @query_text)
+      ) AND is_active = true${ftsFilterSql}
     `;
 
     const [rows, countRows] = await Promise.all([
@@ -311,7 +333,7 @@ export async function searchProductsFtsOnly(options: HybridSearchOptions): Promi
 }
 
 /**
- * Execute Single Unified Cloud Spanner Hybrid Search (BM25 Search Index + Vector COSINE Distance + RRF Reranking).
+ * Execute Single Unified Cloud Spanner Hybrid Search (BM25 3-Tier Multi-TokenList + Vector COSINE Distance + RRF Reranking).
  */
 export async function searchProducts(options: HybridSearchOptions): Promise<HybridSearchResult> {
   if (options.mode === 'fts') {
@@ -370,13 +392,22 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
       filterTypes.brand_pattern = "string";
     }
 
-    // 1. Unified Single Spanner SQL Hybrid Query combining BM25 Search Index + Vector Cosine Distance
+    // 1. Unified Single Spanner SQL Hybrid Query combining BM25 3-Tier Multi-TokenList + Vector Cosine Distance
     const hybridSearchSql = `
       WITH bm25_results AS (
-        SELECT product_id
+        SELECT product_id,
+          (
+            IF(SEARCH(primary_tokens, @query_text), SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
+            IF(SEARCH(category_tokens, @query_text), SCORE(category_tokens, @query_text), 0.0) * 2.5 +
+            IF(SEARCH(description_tokens, @query_text), SCORE(description_tokens, @query_text), 0.0) * 1.0
+          ) AS weighted_bm25_score
         FROM Products@{FORCE_INDEX=idx_products_search}
-        WHERE SEARCH(search_tokens, @query_text) AND is_active = true${bm25FilterSql}
-        ORDER BY SCORE(search_tokens, @query_text) DESC
+        WHERE (
+          SEARCH(primary_tokens, @query_text) OR
+          SEARCH(category_tokens, @query_text) OR
+          SEARCH(description_tokens, @query_text)
+        ) AND is_active = true${bm25FilterSql}
+        ORDER BY weighted_bm25_score DESC
         LIMIT 50
       ),
       vector_results AS (
@@ -434,8 +465,23 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
     // Determine candidate IDs for batch fetching specs
     const candidateIds = candidateRows.map(p => p.product_id);
 
-    // Fetch BM25 index ranks
-    const bm25Sql = `SELECT product_id FROM Products@{FORCE_INDEX=idx_products_search} WHERE SEARCH(search_tokens, @query_text) AND is_active = true${bm25FilterSql} ORDER BY SCORE(search_tokens, @query_text) DESC LIMIT 50`;
+    // Fetch BM25 index ranks with 3-tier weighting
+    const bm25Sql = `
+      SELECT product_id,
+        (
+          IF(SEARCH(primary_tokens, @query_text), SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
+          IF(SEARCH(category_tokens, @query_text), SCORE(category_tokens, @query_text), 0.0) * 2.5 +
+          IF(SEARCH(description_tokens, @query_text), SCORE(description_tokens, @query_text), 0.0) * 1.0
+        ) AS weighted_bm25_score
+      FROM Products@{FORCE_INDEX=idx_products_search}
+      WHERE (
+        SEARCH(primary_tokens, @query_text) OR
+        SEARCH(category_tokens, @query_text) OR
+        SEARCH(description_tokens, @query_text)
+      ) AND is_active = true${bm25FilterSql}
+      ORDER BY weighted_bm25_score DESC
+      LIMIT 50
+    `;
     const bm25Rows = await executeSpannerSql<{ product_id: string }>({
       sql: bm25Sql,
       params: { query_text: queryText, ...filterParams },

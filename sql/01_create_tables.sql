@@ -49,24 +49,30 @@ CREATE TABLE Products (
   acoustic_signature_zh STRING(MAX),
   image_url STRING(1024),
   is_active BOOL NOT NULL DEFAULT (true),
-  search_tokens TOKENLIST AS (TOKENLIST_CONCAT([
-    -- English Full-Text Segmentation (language_tag => 'en')
+  -- Tier 1: Product Name, Brand, Model & Category Title (4.0x Weight)
+  primary_tokens TOKENLIST AS (TOKENLIST_CONCAT([
     TOKENIZE_FULLTEXT(name_en, language_tag=>'en'),
     TOKENIZE_FULLTEXT(category_name_en, language_tag=>'en'),
-    TOKENIZE_FULLTEXT(category_description_en, language_tag=>'en'),
-    TOKENIZE_FULLTEXT(description_en, language_tag=>'en'),
-    TOKENIZE_FULLTEXT(acoustic_signature_en, language_tag=>'en'),
-
-    -- Traditional Chinese Full-Text Segmentation (language_tag => 'zh')
     TOKENIZE_FULLTEXT(name_zh, language_tag=>'zh'),
     TOKENIZE_FULLTEXT(category_name_zh, language_tag=>'zh'),
-    TOKENIZE_FULLTEXT(category_description_zh, language_tag=>'zh'),
-    TOKENIZE_FULLTEXT(description_zh, language_tag=>'zh'),
-    TOKENIZE_FULLTEXT(acoustic_signature_zh, language_tag=>'zh'),
-
-    -- Brand & Model Full-Text Tokenization
     TOKENIZE_FULLTEXT(brand, language_tag=>'en'),
     TOKENIZE_FULLTEXT(model, language_tag=>'en')
+  ])) HIDDEN,
+
+  -- Tier 2: Category Taxonomy & Intent (2.5x Weight)
+  category_tokens TOKENLIST AS (TOKENLIST_CONCAT([
+    TOKENIZE_FULLTEXT(category_name_en, language_tag=>'en'),
+    TOKENIZE_FULLTEXT(category_description_en, language_tag=>'en'),
+    TOKENIZE_FULLTEXT(category_name_zh, language_tag=>'zh'),
+    TOKENIZE_FULLTEXT(category_description_zh, language_tag=>'zh')
+  ])) HIDDEN,
+
+  -- Tier 3: Body Marketing Description & Acoustic Signatures (1.0x Weight)
+  description_tokens TOKENLIST AS (TOKENLIST_CONCAT([
+    TOKENIZE_FULLTEXT(description_en, language_tag=>'en'),
+    TOKENIZE_FULLTEXT(acoustic_signature_en, language_tag=>'en'),
+    TOKENIZE_FULLTEXT(description_zh, language_tag=>'zh'),
+    TOKENIZE_FULLTEXT(acoustic_signature_zh, language_tag=>'zh')
   ])) HIDDEN,
   created_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),
   updated_at TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp=true),

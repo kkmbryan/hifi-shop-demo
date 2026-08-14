@@ -28,6 +28,7 @@ build/
 .next/
 out/
 skills-lock.json
+*.tsbuildinfo
 
 # Generated Images
 scripts/generated_images/

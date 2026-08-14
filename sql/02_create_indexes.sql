@@ -49,10 +49,12 @@ CREATE INDEX idx_specs_key_facet ON ProductSpecifications (
 
 -- -----------------------------------------------------------------------------
 -- 2. Cloud Spanner Full-Text Search Index
--- Tokenized index on generated search_tokens column for BM25 hybrid search.
+-- Multi-tokenized index on generated primary, category, and description token columns for BM25 tiered search.
 -- -----------------------------------------------------------------------------
 CREATE SEARCH INDEX idx_products_search ON Products (
-  search_tokens
+  primary_tokens,
+  category_tokens,
+  description_tokens
 ) STORING (
   category_id,
   category_name_en,
