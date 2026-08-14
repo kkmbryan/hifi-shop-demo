@@ -1726,61 +1726,118 @@ export const MOCK_DB_SPECS: MockSpecRow[] = [
   }
 ];
 
+function textMatchesTerm(text: string, term: string): boolean {
+  if (!text || !term) return false;
+  const tLower = text.toLowerCase();
+  const termLower = term.toLowerCase();
+  if (/[\u4e00-\u9fff]/.test(termLower)) {
+    return tLower.includes(termLower);
+  }
+  const escaped = termLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i');
+  return regex.test(tLower);
+}
+
+function extractTokensAndNgrams(query: string): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const parts = q.split(/\s+/).filter(Boolean);
+  const tokens: string[] = [];
+  for (const part of parts) {
+    tokens.push(part);
+    if (/[\u4e00-\u9fff]/.test(part) && part.length > 2) {
+      for (let i = 0; i <= part.length - 2; i++) {
+        const gram = part.substring(i, i + 2);
+        if (!tokens.includes(gram)) {
+          tokens.push(gram);
+        }
+      }
+    }
+  }
+  return tokens;
+}
+
 function calculateMatchScore(p: MockProductRow, queryText: string): number {
   if (!queryText) return 0;
   const q = queryText.trim().toLowerCase();
-  const terms = q.split(/\s+/).filter(Boolean);
+  if (!q) return 0;
+
+  // Tier 1 (4.0x): Name, Brand, Model, Category Name & ID, Product ID
+  const tier1Text = [
+    p.name_en,
+    p.name_zh,
+    p.brand,
+    p.model,
+    p.category_name_en,
+    p.category_name_zh,
+    p.category_id,
+    p.product_id
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  // Tier 2 (2.5x): Category Description
+  const tier2Text = [
+    p.category_description_en,
+    p.category_description_zh
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  // Tier 3 (1.0x): Product Description & Acoustic Signature
+  const tier3Text = [
+    p.description_en,
+    p.description_zh,
+    p.acoustic_signature_en,
+    p.acoustic_signature_zh
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  const allText = `${tier1Text} ${tier2Text} ${tier3Text}`;
+  const rawParts = q.split(/\s+/).filter(Boolean);
+
+  // Require all whitespace-separated terms to match, or match via CJK n-grams
+  const matchesAllTerms = rawParts.every(part => {
+    if (textMatchesTerm(allText, part)) return true;
+    if (/[\u4e00-\u9fff]/.test(part) && part.length >= 4) {
+      const chunks: string[] = [];
+      for (let i = 0; i <= part.length - 2; i += 2) {
+        chunks.push(part.substring(i, i + 2));
+      }
+      if (chunks.length > 0 && chunks.every(chunk => textMatchesTerm(allText, chunk))) {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  if (!matchesAllTerms) {
+    return 0;
+  }
 
   let totalScore = 0;
+  const tokens = extractTokensAndNgrams(q);
 
-  for (const term of terms) {
-    let tier1Matched = false;
-    let tier2Matched = false;
-    let tier3Matched = false;
-
-    // Tier 1 (4.0x): Name, Brand, Model, Category Name & ID, Product ID
-    if (
-      p.model.toLowerCase().includes(term) ||
-      p.name_en.toLowerCase().includes(term) ||
-      p.name_zh.toLowerCase().includes(term) ||
-      p.brand.toLowerCase().includes(term) ||
-      p.category_name_en.toLowerCase().includes(term) ||
-      p.category_name_zh.toLowerCase().includes(term) ||
-      p.category_id.toLowerCase().includes(term) ||
-      p.product_id.toLowerCase().includes(term)
-    ) {
-      tier1Matched = true;
+  for (const token of tokens) {
+    if (textMatchesTerm(tier1Text, token)) {
+      totalScore += 4.0;
+    }
+    if (textMatchesTerm(tier2Text, token)) {
+      totalScore += 2.5;
+    }
+    if (textMatchesTerm(tier3Text, token)) {
+      totalScore += 1.0;
     }
 
-    // Tier 2 (2.5x): Category Description
-    if (
-      (p.category_description_en && p.category_description_en.toLowerCase().includes(term)) ||
-      (p.category_description_zh && p.category_description_zh.toLowerCase().includes(term))
-    ) {
-      tier2Matched = true;
+    // Boost exact model or brand matches
+    const modelLower = (p.model || "").toLowerCase();
+    const brandLower = (p.brand || "").toLowerCase();
+    if (modelLower === token || modelLower.split(/\s+/).includes(token) || brandLower === token) {
+      totalScore += 4.0;
     }
+  }
 
-    // Tier 3 (1.0x): Product Description & Acoustic Signature
-    if (
-      p.description_en.toLowerCase().includes(term) ||
-      p.description_zh.toLowerCase().includes(term) ||
-      p.acoustic_signature_en.toLowerCase().includes(term) ||
-      p.acoustic_signature_zh.toLowerCase().includes(term)
-    ) {
-      tier3Matched = true;
-    }
-
-    let termScore = 0;
-    if (tier1Matched) termScore += 4.0;
-    if (tier2Matched) termScore += 2.5;
-    if (tier3Matched) termScore += 1.0;
-
-    // Exact model or brand boost
-    if (p.model.toLowerCase() === term || p.model.toLowerCase().split(/\s+/).includes(term) || p.brand.toLowerCase() === term) {
-      termScore += 4.0;
-    }
-
-    totalScore += termScore;
+  // Exact phrase bonuses
+  if (textMatchesTerm(allText, q)) {
+    totalScore += 5.0;
+  }
+  if (textMatchesTerm(tier1Text, q)) {
+    totalScore += 5.0;
   }
 
   return totalScore;
@@ -1858,7 +1915,11 @@ export async function mockExecuteSpannerSql(query: any): Promise<any[] | null> {
     const bm25Ranks = new Map<string, number>();
     bm25Matches.forEach((item, idx) => bm25Ranks.set(item.p.product_id, idx + 1));
 
-    const vectorMatches = baseList;
+    const vectorMatches = [...baseList].sort((a, b) => {
+      const scoreA = calculateMatchScore(a, q);
+      const scoreB = calculateMatchScore(b, q);
+      return scoreB - scoreA;
+    });
     const vectorRanks = new Map<string, number>();
     vectorMatches.forEach((p, idx) => vectorRanks.set(p.product_id, idx + 1));
 
@@ -1989,6 +2050,10 @@ export async function mockExecuteSpannerSql(query: any): Promise<any[] | null> {
     }
     if (params.max_price !== undefined) {
       list = list.filter(p => p.price_hkd <= params.max_price);
+    }
+    const q = (params.query_text || params.query || "").trim();
+    if (q) {
+      list.sort((a, b) => calculateMatchScore(b, q) - calculateMatchScore(a, q));
     }
     return list.slice(0, 50).map((p, idx) => ({ product_id: p.product_id, distance: 0.1 * (idx + 1) }));
   }

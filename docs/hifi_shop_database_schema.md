@@ -271,9 +271,9 @@ Cloud Spanner calculates the composite BM25 relevance score directly inside SQL 
 
 ```sql
 (
-  IF(SEARCH(primary_tokens, @query_text), SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
-  IF(SEARCH(category_tokens, @query_text), SCORE(category_tokens, @query_text), 0.0) * 2.5 +
-  IF(SEARCH(description_tokens, @query_text), SCORE(description_tokens, @query_text), 0.0) * 1.0
+  COALESCE(SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
+  COALESCE(SCORE(category_tokens, @query_text), 0.0) * 2.5 +
+  COALESCE(SCORE(description_tokens, @query_text), 0.0) * 1.0
 ) AS score
 ```
 
@@ -308,9 +308,9 @@ Backend search API executes parallel scoring using Reciprocal Rank Fusion (RRF) 
 WITH bm25_results AS (
   SELECT product_id,
     (
-      IF(SEARCH(primary_tokens, @query_text), SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
-      IF(SEARCH(category_tokens, @query_text), SCORE(category_tokens, @query_text), 0.0) * 2.5 +
-      IF(SEARCH(description_tokens, @query_text), SCORE(description_tokens, @query_text), 0.0) * 1.0
+      COALESCE(SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
+      COALESCE(SCORE(category_tokens, @query_text), 0.0) * 2.5 +
+      COALESCE(SCORE(description_tokens, @query_text), 0.0) * 1.0
     ) AS weighted_bm25_score
   FROM Products@{FORCE_INDEX=idx_products_search}
   WHERE (
@@ -331,7 +331,6 @@ vector_results AS (
   FROM ProductEmbeddings e
   JOIN Products p ON e.product_id = p.product_id
   WHERE p.is_active = true
-    AND COSINE_DISTANCE(e.embedding, @query_embedding) <= 0.65 -- Relevance threshold cutoff
     AND LOWER(p.category_id) = LOWER(@category)               -- Optional pushed filter predicate
     AND p.price_hkd >= @min_price                              -- Optional pushed filter predicate
     AND p.price_hkd <= @max_price                              -- Optional pushed filter predicate

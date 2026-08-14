@@ -1,6 +1,6 @@
 import { v1 as aiplatform } from "@google-cloud/aiplatform";
 import { executeSpannerSql, projectId } from "../config/spanner";
-import { Product, ProductSpecification, parseSpannerNumeric, sanitizeImageUrl, localizeProduct, getProducts } from "./catalogService";
+import { Product, ProductSpecification, parseSpannerNumeric, sanitizeImageUrl, localizeProduct } from "./catalogService";
 
 export interface HybridSearchOptions {
   q: string;
@@ -66,12 +66,18 @@ export async function generateTextEmbedding(text: string): Promise<number[]> {
       const prediction: any = response.predictions[0];
       const embeddingsStruct = prediction.structValue?.fields?.embeddings;
       const values = embeddingsStruct?.structValue?.fields?.values?.listValue?.values;
-      if (values) {
+      if (values && values.length > 0) {
         return values.map((v: any) => v.numberValue || 0);
       }
     }
   } catch (err) {
-    console.warn("[Vertex AI Warning] Could not generate embedding via Vertex AI API, using normalized fallback embedding vector:", (err as Error).message);
+    const location = process.env.GCP_LOCATION || "us-central1";
+    const errCode = (err as any)?.code ? ` (code: ${(err as any).code})` : "";
+    const errDetails = (err as any)?.details ? ` - Details: ${(err as any).details}` : "";
+    console.warn(
+      `[Vertex AI Warning] Could not generate embedding via Vertex AI API (model: text-embedding-004, location: ${location}): ` +
+      `${(err as Error).message}${errCode}${errDetails}. Using normalized fallback embedding vector.`
+    );
   }
 
   return generateFallbackEmbedding(text);
@@ -92,97 +98,6 @@ function generateFallbackEmbedding(text: string): number[] {
 
   const norm = Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0));
   return vector.map(v => v / (norm || 1));
-}
-
-/**
- * Fallback in-memory catalog search when Cloud Spanner is unavailable or query fails.
- */
-async function executeFallbackCatalogSearch(
-  options: HybridSearchOptions,
-  queryText: string,
-  startTime: number
-): Promise<HybridSearchResult> {
-  const limit = options.limit || 20;
-  const offset = options.offset || 0;
-
-  let allProducts: Product[] = [];
-  try {
-    const catalogResult = await getProducts({
-      category_id: options.category,
-      min_price: options.min_price,
-      max_price: options.max_price,
-      brand: options.brand,
-      limit: 1000
-    });
-    allProducts = catalogResult.products;
-  } catch (err) {
-    console.warn("[Fallback Search Warning] Catalog service query failed:", (err as Error).message);
-  }
-
-  const qLower = queryText.toLowerCase();
-  const searchTerms = qLower.split(/\s+/).filter(Boolean);
-
-  const scored = allProducts
-    .map(p => {
-      if (options.category && p.category_id.toLowerCase() !== options.category.toLowerCase()) return null;
-      if (options.min_price !== undefined && p.price_hkd < options.min_price) return null;
-      if (options.max_price !== undefined && p.price_hkd > options.max_price) return null;
-      if (options.brand && !p.brand.toLowerCase().includes(options.brand.toLowerCase())) return null;
-
-      if (!qLower) return { product: p, score: 1 };
-
-      let productScore = 0;
-      // Tier 1 (4.0x): Name, Brand, Model, Category Name
-      const tier1Text = [p.name_en, p.name_zh, p.brand, p.model, p.category_name_en, p.category_name_zh, p.category_id, p.product_id].filter(Boolean).join(" ").toLowerCase();
-      // Tier 2 (2.5x): Category Description
-      const tier2Text = [p.category_description_en, p.category_description_zh].filter(Boolean).join(" ").toLowerCase();
-      // Tier 3 (1.0x): Product Description, Acoustic Signature
-      const tier3Text = [p.description_en, p.description_zh, p.acoustic_signature_en, p.acoustic_signature_zh].filter(Boolean).join(" ").toLowerCase();
-
-      for (const term of searchTerms) {
-        if (tier1Text.includes(term)) {
-          productScore += 4.0;
-        }
-        if (tier2Text.includes(term)) {
-          productScore += 2.5;
-        }
-        if (tier3Text.includes(term)) {
-          productScore += 1.0;
-        }
-      }
-
-      if (productScore <= 0) return null;
-      return { product: p, score: productScore };
-    })
-    .filter((item): item is { product: Product; score: number } => item !== null);
-
-  scored.sort((a, b) => b.score - a.score);
-
-  const ranked = scored.map((item, idx) => {
-    const bm25Rank = idx + 1;
-    const vectorRank = idx + 1;
-    const bm25Term = WEIGHT_BM25 / (K_RRF + bm25Rank);
-    const vectorTerm = WEIGHT_VECTOR / (K_RRF + vectorRank);
-    const rrfScore = bm25Term + vectorTerm;
-
-    return {
-      ...localizeProduct(item.product, options.lang),
-      rrf_score: rrfScore,
-      bm25_rank: bm25Rank,
-      vector_rank: vectorRank
-    };
-  });
-
-  const paginated = ranked.slice(offset, offset + limit);
-
-  return {
-    query: queryText,
-    total_matches: scored.length,
-    execution_time_ms: Date.now() - startTime,
-    limit,
-    offset,
-    products: paginated
-  };
 }
 
 /**
@@ -242,9 +157,9 @@ export async function searchProductsFtsOnly(options: HybridSearchOptions): Promi
              description_en, description_zh, acoustic_signature_en, acoustic_signature_zh,
              image_url, is_active,
              (
-               IF(SEARCH(primary_tokens, @query_text), SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
-               IF(SEARCH(category_tokens, @query_text), SCORE(category_tokens, @query_text), 0.0) * 2.5 +
-               IF(SEARCH(description_tokens, @query_text), SCORE(description_tokens, @query_text), 0.0) * 1.0
+               COALESCE(SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
+               COALESCE(SCORE(category_tokens, @query_text), 0.0) * 2.5 +
+               COALESCE(SCORE(description_tokens, @query_text), 0.0) * 1.0
              ) AS score
       FROM Products@{FORCE_INDEX=idx_products_search}
       WHERE (
@@ -279,8 +194,8 @@ export async function searchProductsFtsOnly(options: HybridSearchOptions): Promi
       })
     ]);
 
-    if (rows === null) {
-      return await executeFallbackCatalogSearch(options, queryText, startTime);
+    if (rows === null || countRows === null) {
+      throw new Error("Cloud Spanner full-text search query failed or database is unreachable");
     }
 
     const totalMatches = countRows && countRows.length > 0 ? Number(countRows[0].count) : rows.length;
@@ -327,8 +242,8 @@ export async function searchProductsFtsOnly(options: HybridSearchOptions): Promi
       products: localized
     };
   } catch (error) {
-    console.warn("[Spanner FTS Search Warning] Spanner query execution failed, falling back to catalog search:", error);
-    return await executeFallbackCatalogSearch(options, queryText, startTime);
+    console.error("[Spanner FTS Search Error] Spanner query execution failed:", error);
+    throw error;
   }
 }
 
@@ -397,9 +312,9 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
       WITH bm25_results AS (
         SELECT product_id,
           (
-            IF(SEARCH(primary_tokens, @query_text), SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
-            IF(SEARCH(category_tokens, @query_text), SCORE(category_tokens, @query_text), 0.0) * 2.5 +
-            IF(SEARCH(description_tokens, @query_text), SCORE(description_tokens, @query_text), 0.0) * 1.0
+            COALESCE(SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
+            COALESCE(SCORE(category_tokens, @query_text), 0.0) * 2.5 +
+            COALESCE(SCORE(description_tokens, @query_text), 0.0) * 1.0
           ) AS weighted_bm25_score
         FROM Products@{FORCE_INDEX=idx_products_search}
         WHERE (
@@ -414,7 +329,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
         SELECT e.product_id, COSINE_DISTANCE(e.embedding, @query_embedding) AS distance
         FROM ProductEmbeddings e
         JOIN Products p ON e.product_id = p.product_id
-        WHERE p.is_active = true AND COSINE_DISTANCE(e.embedding, @query_embedding) <= 0.65${vectorFilterSql}
+        WHERE p.is_active = true${vectorFilterSql}
         ORDER BY distance ASC
         LIMIT 50
       ),
@@ -448,7 +363,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
     });
 
     if (candidateRows === null) {
-      return await executeFallbackCatalogSearch(options, queryText, startTime);
+      throw new Error("Cloud Spanner hybrid search query failed or database is unreachable");
     }
 
     if (candidateRows.length === 0) {
@@ -469,9 +384,9 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
     const bm25Sql = `
       SELECT product_id,
         (
-          IF(SEARCH(primary_tokens, @query_text), SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
-          IF(SEARCH(category_tokens, @query_text), SCORE(category_tokens, @query_text), 0.0) * 2.5 +
-          IF(SEARCH(description_tokens, @query_text), SCORE(description_tokens, @query_text), 0.0) * 1.0
+          COALESCE(SCORE(primary_tokens, @query_text), 0.0) * 4.0 +
+          COALESCE(SCORE(category_tokens, @query_text), 0.0) * 2.5 +
+          COALESCE(SCORE(description_tokens, @query_text), 0.0) * 1.0
         ) AS weighted_bm25_score
       FROM Products@{FORCE_INDEX=idx_products_search}
       WHERE (
@@ -486,17 +401,27 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
       sql: bm25Sql,
       params: { query_text: queryText, ...filterParams },
       types: { query_text: "string", ...filterTypes }
-    }) || [];
+    });
+
+    if (bm25Rows === null) {
+      throw new Error("Cloud Spanner BM25 ranking query failed or database is unreachable");
+    }
+
     const bm25Ranks = new Map<string, number>();
     bm25Rows.forEach((r, idx) => bm25Ranks.set(r.product_id, idx + 1));
 
     // Fetch Vector ranks
-    const vecSql = `SELECT e.product_id FROM ProductEmbeddings e JOIN Products p ON e.product_id = p.product_id WHERE p.is_active = true AND COSINE_DISTANCE(e.embedding, @query_embedding) <= 0.65${vectorFilterSql} ORDER BY COSINE_DISTANCE(e.embedding, @query_embedding) ASC LIMIT 50`;
+    const vecSql = `SELECT e.product_id FROM ProductEmbeddings e JOIN Products p ON e.product_id = p.product_id WHERE p.is_active = true${vectorFilterSql} ORDER BY COSINE_DISTANCE(e.embedding, @query_embedding) ASC LIMIT 50`;
     const vecRows = await executeSpannerSql<{ product_id: string }>({
       sql: vecSql,
       params: { query_embedding: queryEmbedding, ...filterParams },
       types: { query_embedding: { type: "array", child: { type: "float64" } }, ...filterTypes }
-    }) || [];
+    });
+
+    if (vecRows === null) {
+      throw new Error("Cloud Spanner vector ranking query failed or database is unreachable");
+    }
+
     const vecRanks = new Map<string, number>();
     vecRows.forEach((r, idx) => vecRanks.set(r.product_id, idx + 1));
 
@@ -566,7 +491,7 @@ export async function searchProducts(options: HybridSearchOptions): Promise<Hybr
       products: paginated
     };
   } catch (error) {
-    console.warn("[Spanner Hybrid Search Warning] Spanner query execution failed, falling back to catalog search:", error);
-    return await executeFallbackCatalogSearch(options, queryText, startTime);
+    console.error("[Spanner Hybrid Search Error] Spanner query execution failed:", error);
+    throw error;
   }
 }

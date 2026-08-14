@@ -153,6 +153,32 @@ describe('searchService Unit Tests', () => {
       expect(result.products[0].model).toContain('D90');
       expect(result.products[0].brand).toBe('Topping');
     });
+
+    it('should search for multi-word queries requiring all terms to match ("PS audio")', async () => {
+      const result = await searchProductsFtsOnly({ q: 'PS audio' });
+      expect(result.products.length).toBeGreaterThan(0);
+      expect(result.products[0].product_id).toBe('prod-psaudio-directstream-p12');
+      expect(result.products[0].brand).toBe('PS Audio');
+      // Should not contain products that only match 'audio' like 'iFi Audio' or 'Campfire Audio'
+      result.products.forEach(p => {
+        const fullText = `${p.name_en} ${p.brand} ${p.model} ${p.description_en}`.toLowerCase();
+        expect(fullText).toContain('ps');
+        expect(fullText).toContain('audio');
+      });
+    });
+
+    it('should search by unspaced Chinese acoustic keywords using character n-grams ("溫暖膽味")', async () => {
+      const result = await searchProductsFtsOnly({ q: '溫暖膽味' });
+      expect(result.products.length).toBeGreaterThan(0);
+      expect(result.products[0].product_id).toBe('prod-feliks-envy');
+      expect(result.products[0].acoustic_signature_zh).toContain('300B膽味極致溫暖');
+    });
+
+    it('should evaluate 3-tier weighting using COALESCE score expressions in SQL queries', async () => {
+      const result = await searchProductsFtsOnly({ q: 'Chord' });
+      expect(result.products.length).toBeGreaterThan(0);
+      expect(result.products[0].brand).toBe('Chord Electronics');
+    });
   });
 
   describe('Reciprocal Rank Fusion (RRF) Formula & Sorting in Hybrid Mode', () => {
@@ -186,6 +212,16 @@ describe('searchService Unit Tests', () => {
       expect(topProduct.vector_rank).toBeLessThanOrEqual(999);
     });
 
+    it('should rank multi-word "PS audio" and CJK "溫暖膽味" in hybrid mode', async () => {
+      const psResult = await searchProducts({ q: 'PS audio', mode: 'hybrid' });
+      expect(psResult.products.length).toBeGreaterThan(0);
+      expect(psResult.products[0].product_id).toBe('prod-psaudio-directstream-p12');
+
+      const cjkResult = await searchProducts({ q: '溫暖膽味', mode: 'hybrid' });
+      expect(cjkResult.products.length).toBeGreaterThan(0);
+      expect(cjkResult.products[0].product_id).toBe('prod-feliks-envy');
+    });
+
     it('should project flattened category fields in hybrid search results', async () => {
       const result = await searchProducts({ q: 'Sennheiser', lang: 'zh-HK' });
       expect(result.products.length).toBeGreaterThan(0);
@@ -196,7 +232,7 @@ describe('searchService Unit Tests', () => {
     });
   });
 
-  describe('Fallback Hybrid Search Execution', () => {
+  describe('Error Propagation & Edge Case Handling in Search Service', () => {
     it('should handle empty query gracefully by returning empty product list', async () => {
       const result = await searchProducts({ q: '' });
       expect(result.products).toEqual([]);
@@ -210,31 +246,24 @@ describe('searchService Unit Tests', () => {
       expect(result.total_matches).toBe(0);
     });
 
-    it('should execute fallback search when Spanner is unavailable and filter by category', async () => {
-      const result = await searchProducts({ q: 'DAC', category: 'dacs' });
-      expect(result.products.length).toBeGreaterThan(0);
-      result.products.forEach((p) => {
-        expect(p.category_id.toLowerCase()).toBe('dacs');
-      });
+    it('should propagate database errors when Spanner query fails', async () => {
+      const mockSpannerModule = require('../../tests/backend/mockSpanner');
+      const originalMock = mockSpannerModule.mockExecuteSpannerSql;
+      mockSpannerModule.mockExecuteSpannerSql = jest.fn().mockResolvedValue(null);
+
+      await expect(searchProducts({ q: 'Chord', mode: 'hybrid' })).rejects.toThrow();
+
+      mockSpannerModule.mockExecuteSpannerSql = originalMock;
     });
 
-    it('should execute fallback search with price boundary filtering', async () => {
-      const minPrice = 10000;
-      const maxPrice = 40000;
-      const result = await searchProducts({ q: 'amplifier', min_price: minPrice, max_price: maxPrice });
+    it('should propagate database errors when FTS query fails', async () => {
+      const mockSpannerModule = require('../../tests/backend/mockSpanner');
+      const originalMock = mockSpannerModule.mockExecuteSpannerSql;
+      mockSpannerModule.mockExecuteSpannerSql = jest.fn().mockResolvedValue(null);
 
-      result.products.forEach((p) => {
-        expect(p.price_hkd).toBeGreaterThanOrEqual(minPrice);
-        expect(p.price_hkd).toBeLessThanOrEqual(maxPrice);
-      });
-    });
+      await expect(searchProductsFtsOnly({ q: 'Chord' })).rejects.toThrow();
 
-    it('should execute fallback search with brand filtering', async () => {
-      const result = await searchProducts({ q: 'headphones', brand: 'Sennheiser' });
-      expect(result.products.length).toBeGreaterThan(0);
-      result.products.forEach((p) => {
-        expect(p.brand.toLowerCase()).toContain('sennheiser');
-      });
+      mockSpannerModule.mockExecuteSpannerSql = originalMock;
     });
   });
 
